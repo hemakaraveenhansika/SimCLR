@@ -167,6 +167,8 @@ class ContrastiveBatchSampler(Sampler[List[int]]):
         it = []
         for samp in self.samplers:
             it.append(iter(samp))
+        print(it[0])
+        print(it)
         for _ in range(len(self.samplers[0])):
             for j in draw:
                 batch.append(next(it[j]))

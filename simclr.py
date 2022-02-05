@@ -7,6 +7,7 @@ import torch
 import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
+import numpy as np
 
 from utils import accuracy, save_checkpoint, save_config_file
 
@@ -79,7 +80,7 @@ class SimCLR(object):
             epoch_reslts['epoch'] = epoch_counter
 
             for images, _ in tqdm(train_loader):
-                print("\nbefor cat:", images.shape)
+                print("\nbefor cat:", np.array(images).shape)
                 images = torch.cat(images, dim=0)
                 print("after cat:", images.shape)
                 images = images.to(self.args.device)

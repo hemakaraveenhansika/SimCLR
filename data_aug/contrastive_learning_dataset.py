@@ -22,6 +22,11 @@ class ContrastiveLearningDataset:
                                               GaussianBlur(kernel_size=int(0.1 * size)),
                                               transforms.ToTensor()])
         return data_transforms
+    @staticmethod
+    def get_medicap_contrastive_transform(size):
+        data_transforms = transforms.Compose([transforms.Resize(size),
+                                              transforms.ToTensor()])
+        return data_transforms
 
     def get_dataset(self, name, n_views):
         valid_datasets = {'cifar10': lambda: datasets.CIFAR10(self.root_folder, train=True,
@@ -35,7 +40,10 @@ class ContrastiveLearningDataset:
                                                               self.get_simclr_pipeline_transform(96),
                                                               n_views),
                                                           download=True),
-                        'contrastive':lambda: ContrastiveDataset(self.root_folder,split=self.args.image_list,transform= transforms.Compose([transforms.ToTensor()]))}
+                        'contrastive':lambda: ContrastiveDataset(self.root_folder,
+                                                                split=self.args.image_list,
+                                                                transform=self.get_medicap_contrastive_transform(256))
+                        }
 
         try:
             dataset_fn = valid_datasets[name]

@@ -27,7 +27,7 @@ class ResNetSimCLR(nn.Module):
                   stride=layer.stride, 
                   padding=layer.padding,
                   bias=layer.bias)
-            new_layer.weight[:, :1, :, :] = layer.weight[:, :1, :, :].clone()
+            # new_layer.weight[:, :1, :, :] = layer.weight[:, :1, :, :].clone()
             new_layer.weight = nn.Parameter(new_layer.weight)
             model.conv1 = new_layer
 

@@ -6,6 +6,7 @@ import copy
 from typing import Iterator, Optional, Sequence, List, TypeVar, Generic, Sized
 import torchvision.transforms as transforms
 from data_aug.view_generator import ContrastiveLearningViewGenerator
+from data_aug.gaussian_blur import GaussianBlur
 
 class ContrastiveDataset(Dataset):
     def __init__(self, data_dir, image_list_file):
@@ -30,20 +31,17 @@ class ContrastiveDataset(Dataset):
 
         self.image_names = image_names
         self.labels = labels
-        self.transform = ContrastiveLearningViewGenerator( self.get_simclr_pipeline_transform(), 2)
+        self.transform = ContrastiveLearningViewGenerator( self.get_simclr_pipeline_transform(32), 2)
 
-    def get_simclr_pipeline_transform(self):
+    def get_simclr_pipeline_transform(self, size, s=1):
 
         """Return a set of data augmentation transformations as described in the SimCLR paper."""
-        normalize = transforms.Normalize([0.485, 0.456, 0.406],
-                                         [0.229, 0.224, 0.225])
-        data_transforms = transforms.Compose([ transforms.Resize(256),
-                                           transforms.TenCrop(224),
-                                           transforms.Lambda
-                                           (lambda crops: torch.stack([transforms.ToTensor()(crop) for crop in crops])),
-                                           transforms.Lambda
-                                           (lambda crops: torch.stack([normalize(crop) for crop in crops]))
-                                       ])
+        color_jitter = transforms.ColorJitter(0.8 * s, 0.8 * s, 0.8 * s, 0.2 * s)
+        data_transforms = transforms.Compose([transforms.RandomResizedCrop(size=size),
+                                              transforms.RandomApply([color_jitter], p=0.8),
+                                              transforms.RandomGrayscale(p=0.2),
+                                              GaussianBlur(kernel_size=int(0.1 * size)),
+                                              transforms.ToTensor()])
         return data_transforms
 
     def __getitem__(self, index):
@@ -54,7 +52,7 @@ class ContrastiveDataset(Dataset):
             image and its labels
         """
         image_name = self.image_names[index]
-        image = Image.open(image_name).convert('L')
+        image = Image.open(image_name).convert('RGB')
         label = self.labels[index]
         if self.transform is not None:
             image = self.transform(image)

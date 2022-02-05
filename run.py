@@ -3,7 +3,6 @@ import torch
 import torch.backends.cudnn as cudnn
 from torchvision import models
 from data_aug.contrastive_learning_dataset import ContrastiveLearningDataset
-from data_aug.data import ContrastiveDataset
 from models.resnet_simclr import ResNetSimCLR
 from simclr import SimCLR
 
@@ -14,8 +13,8 @@ model_names = sorted(name for name in models.__dict__
 parser = argparse.ArgumentParser(description='PyTorch SimCLR')
 parser.add_argument('-data', metavar='DIR', default='./datasets', help='path to dataset')
 parser.add_argument('-record_dir', metavar='record_dir', default='./', help='path to record_dir')
-parser.add_argument('-dataset-name', default='stl10',
-                    help='dataset name', choices=['stl10', 'cifar10'])
+parser.add_argument('-dataset-name', default='chestxray_v_1',
+                    help='dataset name', choices=['stl10', 'cifar10', 'chestxray_v_1'])
 parser.add_argument('-a', '--arch', metavar='ARCH', default='resnet18',
                     choices=model_names,
                     help='model architecture: ' +
@@ -69,12 +68,11 @@ def main():
         args.device = torch.device('cpu')
         args.gpu_index = -1
 
-    # dataset = ContrastiveLearningDataset(args.data)
-    # train_dataset = dataset.get_dataset(args.dataset_name, args.n_views)
+    dataset = ContrastiveLearningDataset(args)
+    train_dataset = dataset.get_dataset(args.dataset_name, args.n_views, args.train_image_list)
 
-    train_dataset = ContrastiveDataset(data_dir=args.data_dir, image_list_file=args.train_image_list)
+    # train_dataset = ContrastiveDataset(data_dir=args.data_dir, image_list_file=args.train_image_list)
 
-    # train_dataset = dataset.get_dataset(args.dataset_name, args.n_views)
 
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=args.batch_size, shuffle=True,

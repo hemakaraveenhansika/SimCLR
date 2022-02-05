@@ -79,14 +79,14 @@ class SimCLR(object):
             epoch_reslts['epoch'] = epoch_counter
 
             for images, _ in tqdm(train_loader):
-                # print("\nbefor cat:", len(images), images[0].shape, images[1].shape)
+                print("\nbefor cat:", len(images), images[0].shape, images[1].shape)
                 images = torch.cat(images, dim=0)
-                # print("after cat:", images.shape)
+                print("after cat:", images.shape)
 
                 images = images.to(self.args.device)
 
                 features = self.model(images)
-                # print("features", features.shape)
+                print("features", features.shape)
 
                 logits, labels = self.info_nce_loss(features)
                 loss = self.criterion(logits, labels)

@@ -166,15 +166,15 @@ class ContrastiveBatchSampler(Sampler[List[int]]):
         iters = []
         for samp in self.samplers:
             iters.append(iter(samp))
-        draw = choice(iters, self.batch_size, replace=False, p=([0.99]+[0.01/(len(self.samplers)-1)]*(len(self.samplers)-1)))
+        draw = choice(range(len(iters)), self.batch_size, replace=False, p=([0.99]+[0.01/(len(self.samplers)-1)]*(len(self.samplers)-1)))
         print(draw)
         for _ in range(len(self.samplers[0])):
             for j in draw:
-                print(j)
-                batch.append(next(j))
+                print(iters[j])
+                batch.append(next(iters[j]))
                 print("done")
             for k in draw:
-                batch.append(next(k))
+                batch.append(next(iters[k]))
             yield batch
             batch = []
             draw = choice(self.samplers, self.batch_size, replace=False, p=([0.99]+[0.01/(len(self.samplers)-1)]*(len(self.samplers)-1)))

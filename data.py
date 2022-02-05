@@ -167,7 +167,7 @@ class ContrastiveBatchSampler(Sampler[List[int]]):
         for samp in self.samplers:
             iters.append(iter(samp))
         draw = choice(range(len(iters)), self.batch_size, replace=False, p=([0.99]+[0.01/(len(self.samplers)-1)]*(len(self.samplers)-1)))
-        for _ in range(len(self.samplers[0])):
+        for _ in range(len(self.samplers[0])//2):
             for j in draw:
                 batch.append(next(iters[j]))
             for k in draw:
@@ -183,7 +183,7 @@ class ContrastiveBatchSampler(Sampler[List[int]]):
         # implementation below.
         # Somewhat related: see NOTE [ Lack of Default `__len__` in Python Abstract Base Classes ]
 
-        t_len = len(self.samplers[0])
+        t_len = len(self.samplers[0])//2
         # for s in self.samplers:
         #     t_len += len(s)
         return t_len

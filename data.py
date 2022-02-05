@@ -36,7 +36,9 @@ class ContrastiveDataset(Dataset):
                 for l in range(len(label)):
                     if(label[l] == 1):
                         self.classes[CLASS_NAMES[l]].append(image_name)
-
+        print("Dataset summery")
+        for i,j in self.classes.items():
+            print(i,j)
         self.image_names = image_names
         self.labels = labels
         self.transform = transform

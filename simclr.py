@@ -79,7 +79,7 @@ class SimCLR(object):
             epoch_reslts['epoch'] = epoch_counter
 
             for images, _ in tqdm(train_loader):
-                print("\nbefor cat:", images.shape)
+                print("\nbefor cat:", len(images), images[0].shape, images[1].shape)
                 images = torch.cat(images, dim=0)
                 print("after cat:", images.shape)
 

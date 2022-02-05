@@ -2,6 +2,7 @@ import argparse
 import torch
 import torch.backends.cudnn as cudnn
 from torchvision import models
+from data import ContrastiveBatchSampler
 from data_aug.contrastive_learning_dataset import ContrastiveLearningDataset
 from models.resnet_simclr import ResNetSimCLR
 from simclr import SimCLR
@@ -50,6 +51,7 @@ parser.add_argument('--temperature', default=0.07, type=float,
 parser.add_argument('--n-views', default=2, type=int, metavar='N',
                     help='Number of views for contrastive learning training.')
 parser.add_argument('--gpu-index', default=0, type=int, help='Gpu index.')
+parser.add_argument('--dataset_name', default="contrastive", type=int, help='Dataset')
 
 
 def main():
@@ -65,12 +67,12 @@ def main():
         args.gpu_index = -1
 
     dataset = ContrastiveLearningDataset(args.data)
-
+    sampler = ContrastiveBatchSampler(args.batch_size,dataset=dataset)
     train_dataset = dataset.get_dataset(args.dataset_name, args.n_views)
 
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=args.batch_size, shuffle=True,
-        num_workers=args.workers, pin_memory=True, drop_last=True)
+        num_workers=args.workers, pin_memory=True, drop_last=True, batch_sampler=sampler)
 
     model = ResNetSimCLR(base_model=args.arch, out_dim=args.out_dim)
 

@@ -140,7 +140,7 @@ class ContrastiveBatchSampler(Sampler[List[int]]):
         [[0, 1, 2], [3, 4, 5], [6, 7, 8]]
     """
 
-    def __init__(self, sampler: Sampler[int], batch_size: int, drop_last: bool,dataset: ContrastiveDataset) -> None:
+    def __init__(self, batch_size: int, drop_last: bool,dataset: ContrastiveDataset) -> None:
         # Since collections.abc.Iterable does not check for `__getitem__`, which
         # is one way for an object to be an iterable, we don't do an `isinstance`
         # check here.
@@ -151,7 +151,7 @@ class ContrastiveBatchSampler(Sampler[List[int]]):
         if not isinstance(drop_last, bool):
             raise ValueError("drop_last should be a boolean value, but got "
                              "drop_last={}".format(drop_last))
-        self.sampler = sampler
+        # self.sampler = sampler
         self.batch_size = batch_size
         self.drop_last = drop_last
         self.dataset = dataset
@@ -162,9 +162,11 @@ class ContrastiveBatchSampler(Sampler[List[int]]):
     def __iter__(self) -> Iterator[List[int]]:
         draw = choice(self.samplers, self.batch_size, replace=False, p=([0.99]+[0.01/(len(self.samplers)-1)]*(len(self.samplers)-1)))
         batch = []
-        for i in range(len(self.samplers[0])):
+        for _ in range(len(self.samplers[0])):
             for j in draw:
                 batch.append(next(self.samplers[j]))
+            for k in draw:
+                batch.append(next(self.samplers[k]))
             yield batch
             batch = []
             draw = choice(self.samplers, self.batch_size, replace=False, p=([0.99]+[0.01/(len(self.samplers)-1)]*(len(self.samplers)-1)))

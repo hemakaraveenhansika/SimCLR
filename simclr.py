@@ -67,6 +67,13 @@ class SimCLR(object):
 
         for epoch_counter in range(self.args.epochs):
             for images, _ in tqdm(train_loader):
+                if(type(images) is list):
+                    print("array")
+                    print("batch list size",len(images))
+                    print("batch list item size",images[0].size())
+                else:
+                    print("tensor")
+                    print("batch list size",images.size())
                 images = torch.cat(images, dim=0)
 
                 images = images.to(self.args.device)

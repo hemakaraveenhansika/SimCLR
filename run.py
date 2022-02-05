@@ -52,6 +52,8 @@ parser.add_argument('--n-views', default=2, type=int, metavar='N',
                     help='Number of views for contrastive learning training.')
 parser.add_argument('--gpu-index', default=0, type=int, help='Gpu index.')
 parser.add_argument('--image-list', default="./data/train_list.txt", type=str, help='Image name list path')
+parser.add_argument('--train-image-limit', default=42405, type=int, help='Train images limit')
+parser.add_argument('--test-image-limit', default=42405, type=int, help='Test images limit')
 
 
 def main():
@@ -68,7 +70,7 @@ def main():
 
     dataset = ContrastiveLearningDataset(args)
     train_dataset = dataset.get_dataset(args.dataset_name, args.n_views)
-    sampler = ContrastiveBatchSampler(args.batch_size,dataset=train_dataset,drop_last=False)
+    sampler = ContrastiveBatchSampler(args.batch_size,args.train_image_limit,dataset=train_dataset,drop_last=False)
 
     train_loader = torch.utils.data.DataLoader(
         train_dataset,

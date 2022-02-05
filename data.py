@@ -142,7 +142,7 @@ class ContrastiveBatchSampler(Sampler[List[int]]):
         [[0, 1, 2], [3, 4, 5], [6, 7, 8]]
     """
 
-    def __init__(self, batch_size: int, drop_last: bool,dataset: ContrastiveDataset) -> None:
+    def __init__(self, batch_size: int, max_image_count, drop_last: bool,dataset: ContrastiveDataset) -> None:
         # Since collections.abc.Iterable does not check for `__getitem__`, which
         # is one way for an object to be an iterable, we don't do an `isinstance`
         # check here.
@@ -157,6 +157,7 @@ class ContrastiveBatchSampler(Sampler[List[int]]):
         self.batch_size = batch_size
         self.drop_last = drop_last
         self.dataset = dataset
+        self.max_image_count = max_image_count
         self.samplers = [ContrastiveRandomSampler(self.dataset._get_class("No findings"))]
         for c in range(len(CLASS_NAMES)):
             self.samplers.append(ContrastiveRandomSampler(self.dataset._get_class(CLASS_NAMES[c]),replacement= True,num_samples = len(self.dataset._get_class("No findings"))))
@@ -167,7 +168,7 @@ class ContrastiveBatchSampler(Sampler[List[int]]):
         for samp in self.samplers:
             iters.append(iter(samp))
         draw = choice(range(len(iters)), self.batch_size, replace=False, p=([0.99]+[0.01/(len(self.samplers)-1)]*(len(self.samplers)-1)))
-        for _ in range(len(self.samplers[0])//2):
+        for _ in range(min(len(self.samplers[0])//2,self.max_image_count//2)):
             for j in draw:
                 batch.append(next(iters[j]))
             for k in draw:

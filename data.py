@@ -180,7 +180,7 @@ class ContrastiveBatchSampler(Sampler[List[int]]):
         # implementation below.
         # Somewhat related: see NOTE [ Lack of Default `__len__` in Python Abstract Base Classes ]
 
-        t_len = self.samplers[0]*len(self.samplers)
+        t_len = len(self.samplers[0])*len(self.samplers)
         # for s in self.samplers:
         #     t_len += len(s)
         return t_len

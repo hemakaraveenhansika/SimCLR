@@ -81,6 +81,7 @@ class SimCLR(object):
 
             for images, _ in tqdm(train_loader):
                 print("\nbefor cat:", np.array(images).shape)
+                print(images)
                 images = torch.cat(images, dim=0)
                 print("after cat:", images.shape)
                 images = images.to(self.args.device)

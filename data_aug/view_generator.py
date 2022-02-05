@@ -12,6 +12,4 @@ class ContrastiveLearningViewGenerator(object):
 
     def __call__(self, x):
         a = [self.base_transform(x) for i in range(self.n_views)]
-        print("ContrastiveLearningViewGenerator each size",a[0].size())
-        print("ContrastiveLearningViewGenerator length",len(a))
         return a

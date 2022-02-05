@@ -31,7 +31,7 @@ class ContrastiveDataset(Dataset):
 
         self.image_names = image_names
         self.labels = labels
-        self.transform = ContrastiveLearningViewGenerator( self.get_simclr_pipeline_transform(32), 2)
+        self.transform = ContrastiveLearningViewGenerator( self.get_simclr_pipeline_transform(256), 2)
 
     def get_simclr_pipeline_transform(self, size, s=1):
 

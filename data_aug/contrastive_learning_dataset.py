@@ -3,11 +3,13 @@ from data_aug.gaussian_blur import GaussianBlur
 from torchvision import transforms, datasets
 from data_aug.view_generator import ContrastiveLearningViewGenerator
 from exceptions.exceptions import InvalidDatasetSelection
+from data_aug.data import ContrastiveDataset
 
 
 class ContrastiveLearningDataset:
-    def __init__(self, root_folder):
-        self.root_folder = root_folder
+    def __init__(self, args):
+        self.root_folder = args.data
+        self.args = args
 
     @staticmethod
     def get_simclr_pipeline_transform(size, s=1):
@@ -22,7 +24,7 @@ class ContrastiveLearningDataset:
                                               transforms.ToTensor()])
         return data_transforms
 
-    def get_dataset(self, name, n_views):
+    def get_dataset(self, name, n_views, image_list):
         valid_datasets = {'cifar10': lambda: datasets.CIFAR10(self.root_folder, train=True,
                                                               transform=ContrastiveLearningViewGenerator(
                                                                   self.get_simclr_pipeline_transform(32),
@@ -33,7 +35,11 @@ class ContrastiveLearningDataset:
                                                           transform=ContrastiveLearningViewGenerator(
                                                               self.get_simclr_pipeline_transform(96),
                                                               n_views),
-                                                          download=True)}
+                                                          download=True),
+
+                          'chestxray_v_1': lambda: ContrastiveDataset(data_dir=self.args.data_dir, image_list_file=image_list)
+
+                          }
 
         try:
             dataset_fn = valid_datasets[name]

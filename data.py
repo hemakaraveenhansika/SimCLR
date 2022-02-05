@@ -172,6 +172,7 @@ class ContrastiveBatchSampler(Sampler[List[int]]):
             for j in draw:
                 print(j)
                 batch.append(next(j))
+                print("done")
             for k in draw:
                 batch.append(next(k))
             yield batch

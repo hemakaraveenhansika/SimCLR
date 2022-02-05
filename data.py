@@ -1,13 +1,15 @@
 import torch
-from torch.utils.data import Dataset , Sampler
+from torch.utils.data import Dataset , Sampler, RandomSampler
 from PIL import Image
 import os
 import copy
 from typing import Iterator, Optional, Sequence, List, TypeVar, Generic, Sized
+from numpy.random import choice
 
-
+CLASS_NAMES = [ 'Atelectasis', 'Cardiomegaly', 'Effusion', 'Infiltration', 'Mass', 'Nodule', 'Pneumonia',
+                'Pneumothorax', 'Consolidation', 'Edema', 'Emphysema', 'Fibrosis', 'Pleural_Thickening', 'Hernia']
 class ContrastiveDataset(Dataset):
-    def __init__(self, data_dir, image_list_file, transform=None):
+    def __init__(self, data_dir, split, transform=None):
         """
         Args:
             data_dir: path to image directory.
@@ -17,7 +19,10 @@ class ContrastiveDataset(Dataset):
         """
         image_names = []
         labels = []
-        with open(image_list_file, "r") as f:
+        self.classes = {"No findings":[]}
+        for i in CLASS_NAMES:
+            self.classes[i] = []
+        with open(split+"_list.txt", "r") as f:
             for line in f:
                 items = line.split()
                 image_name= items[0]
@@ -26,6 +31,11 @@ class ContrastiveDataset(Dataset):
                 image_name = os.path.join(data_dir, image_name)
                 image_names.append(image_name)
                 labels.append(label)
+                if(sum(label)==0):
+                    self.classes["No findings"].append(image_name)
+                for l in range(len(label)):
+                    if(label[l] == 1):
+                        self.classes[CLASS_NAMES[l]].append(image_name)
 
         self.image_names = image_names
         self.labels = labels
@@ -40,14 +50,79 @@ class ContrastiveDataset(Dataset):
             image and its labels
         """
         image_name = self.image_names[index]
-        image = Image.open(image_name).convert('RGB')
+        image = Image.open(image_name).convert('L')
         label = self.labels[index]
         if self.transform is not None:
             image = self.transform(image)
+        
         return image, torch.FloatTensor(label)
 
     def __len__(self):
         return len(self.image_names)
+    def _get_class(self,cls):
+        return self.classes[cls]
+    def _get_lengths(self):
+        return {y:len(x) for y,x in self.classes.items()}
+
+class ContrastiveRandomSampler(Sampler[int]):
+    r"""Samples elements randomly. If without replacement, then sample from a shuffled dataset.
+    If with replacement, then user can specify :attr:`num_samples` to draw.
+
+    Args:
+        data_source (Dataset): dataset to sample from
+        replacement (bool): samples are drawn on-demand with replacement if ``True``, default=``False``
+        num_samples (int): number of samples to draw, default=`len(dataset)`. This argument
+            is supposed to be specified only when `replacement` is ``True``.
+        generator (Generator): Generator used in sampling.
+    """
+    data_source: Sized
+    replacement: bool
+
+    def __init__(self, data_source: Sized, replacement: bool = False,
+                 num_samples: Optional[int] = None, generator=None) -> None:
+        self.data_source = data_source
+        self.replacement = replacement
+        self._num_samples = num_samples
+        self.generator = generator
+
+        if not isinstance(self.replacement, bool):
+            raise TypeError("replacement should be a boolean value, but got "
+                            "replacement={}".format(self.replacement))
+
+        if self._num_samples is not None and not replacement:
+            raise ValueError("With replacement=False, num_samples should not be specified, "
+                             "since a random permute will be performed.")
+
+        if not isinstance(self.num_samples, int) or self.num_samples <= 0:
+            raise ValueError("num_samples should be a positive integer "
+                             "value, but got num_samples={}".format(self.num_samples))
+
+    @property
+    def num_samples(self) -> int:
+        # dataset size might change at runtime
+        if self._num_samples is None:
+            return len(self.data_source)
+        return self._num_samples
+
+    def __iter__(self) -> Iterator[int]:
+        n = len(self.data_source)
+        if self.generator is None:
+            seed = int(torch.empty((), dtype=torch.int64).random_().item())
+            generator = torch.Generator()
+            generator.manual_seed(seed)
+        else:
+            generator = self.generator
+
+        if self.replacement:
+            for _ in range(self.num_samples // 32):
+                yield from torch.randint(high=n, size=(32,), dtype=torch.int64, generator=generator).tolist()
+            yield from torch.randint(high=n, size=(self.num_samples % 32,), dtype=torch.int64, generator=generator).tolist()
+        else:
+            yield from torch.randperm(n, generator=generator).tolist()
+
+    def __len__(self) -> int:
+        return self.num_samples
+
 
 class ContrastiveBatchSampler(Sampler[List[int]]):
     r"""Wraps another sampler to yield a mini-batch of indices.
@@ -65,7 +140,7 @@ class ContrastiveBatchSampler(Sampler[List[int]]):
         [[0, 1, 2], [3, 4, 5], [6, 7, 8]]
     """
 
-    def __init__(self, sampler: Sampler[int], batch_size: int, drop_last: bool) -> None:
+    def __init__(self, sampler: Sampler[int], batch_size: int, drop_last: bool,dataset: ContrastiveDataset) -> None:
         # Since collections.abc.Iterable does not check for `__getitem__`, which
         # is one way for an object to be an iterable, we don't do an `isinstance`
         # check here.
@@ -79,15 +154,21 @@ class ContrastiveBatchSampler(Sampler[List[int]]):
         self.sampler = sampler
         self.batch_size = batch_size
         self.drop_last = drop_last
-        self.samplers = [sampler]
-        for _ in range(batch_size-1):
-            self.samplers.append(copy.deepcopy(sampler))
+        self.dataset = dataset
+        self.samplers = [ContrastiveRandomSampler(self.dataset._get_class("No findings"))]
+        for c in range(len(CLASS_NAMES)):
+            self.samplers.append(ContrastiveRandomSampler(self.dataset._get_class(CLASS_NAMES[c]),replacement= True,num_samples = len(self.dataset._get_class("No findings"))))
 
     def __iter__(self) -> Iterator[List[int]]:
+        draw = choice(self.samplers, self.batch_size, replace=False, p=([0.99]+[0.01/(len(self.samplers)-1)]*(len(self.samplers)-1)))
         batch = []
-        for sampler in self.samplers:
-            batch.append(next(sampler))
-        yield batch
+        for i in range(len(self.samplers[0])):
+            for j in draw:
+                batch.append(next(self.samplers[j]))
+            yield batch
+            batch = []
+            draw = choice(self.samplers, self.batch_size, replace=False, p=([0.99]+[0.01/(len(self.samplers)-1)]*(len(self.samplers)-1)))
+ 
 
     def __len__(self) -> int:
         # Can only be called if self.sampler has __len__ implemented
@@ -95,9 +176,9 @@ class ContrastiveBatchSampler(Sampler[List[int]]):
         # implementation below.
         # Somewhat related: see NOTE [ Lack of Default `__len__` in Python Abstract Base Classes ]
 
-        t_len = 0
-        for s in self.samplers:
-            t_len += len(s)
+        t_len = self.samplers[0]*len(self.samplers)
+        # for s in self.samplers:
+        #     t_len += len(s)
         return t_len
         # if self.drop_last:
         #     return len(self.sampler) // self.batch_size  # type: ignore[arg-type]

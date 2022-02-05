@@ -1,4 +1,5 @@
 from torchvision.transforms import transforms
+from data import ContrastiveDataset
 from data_aug.gaussian_blur import GaussianBlur
 from torchvision import transforms, datasets
 from data_aug.view_generator import ContrastiveLearningViewGenerator
@@ -32,7 +33,8 @@ class ContrastiveLearningDataset:
                                                           transform=ContrastiveLearningViewGenerator(
                                                               self.get_simclr_pipeline_transform(96),
                                                               n_views),
-                                                          download=True)}
+                                                          download=True),
+                        'contrastive':lambda: ContrastiveDataset(self.root_folder,split="train",transform= transforms.Compose([transforms.ToTensor()]))}
 
         try:
             dataset_fn = valid_datasets[name]

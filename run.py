@@ -67,7 +67,7 @@ def main():
         args.gpu_index = -1
 
     dataset = ContrastiveLearningDataset(args.data)
-    sampler = ContrastiveBatchSampler(args.batch_size,dataset=dataset)
+    sampler = ContrastiveBatchSampler(args.batch_size,dataset=dataset,drop_last=False)
     train_dataset = dataset.get_dataset(args.dataset_name, args.n_views)
 
     train_loader = torch.utils.data.DataLoader(

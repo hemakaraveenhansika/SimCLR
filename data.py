@@ -38,7 +38,7 @@ class ContrastiveDataset(Dataset):
                         self.classes[CLASS_NAMES[l]].append(image_name)
         print("Dataset summery")
         for i,j in self.classes.items():
-            print(i,j)
+            print(i,len(j))
         self.image_names = image_names
         self.labels = labels
         self.transform = transform

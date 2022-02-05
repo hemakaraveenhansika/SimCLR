@@ -52,7 +52,8 @@ parser.add_argument('--n-views', default=2, type=int, metavar='N',
 parser.add_argument('--gpu-index', default=0, type=int, help='Gpu index.')
 
 def collate_wrapper(batch):
-    print("collate_wrapper",batch.size())
+    print("collate_wrapper each size",batch[0].size())
+    print("collate_wrapper count",len(batch[0]))
 def main():
     args = parser.parse_args()
     assert args.n_views == 2, "Only two view training is supported. Please use --n-views 2."

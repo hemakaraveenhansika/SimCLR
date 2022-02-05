@@ -51,7 +51,8 @@ parser.add_argument('--n-views', default=2, type=int, metavar='N',
                     help='Number of views for contrastive learning training.')
 parser.add_argument('--gpu-index', default=0, type=int, help='Gpu index.')
 
-
+def collate_wrapper(batch):
+    print("collate_wrapper",batch.size())
 def main():
     args = parser.parse_args()
     assert args.n_views == 2, "Only two view training is supported. Please use --n-views 2."
@@ -70,7 +71,7 @@ def main():
 
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=args.batch_size, shuffle=True,
-        num_workers=args.workers, pin_memory=True, drop_last=True)
+        num_workers=args.workers, pin_memory=True, drop_last=True,collate_fn=collate_wrapper)
 
     model = ResNetSimCLR(base_model=args.arch, out_dim=args.out_dim)
 

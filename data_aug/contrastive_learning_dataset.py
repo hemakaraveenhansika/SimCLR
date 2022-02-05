@@ -7,8 +7,9 @@ from exceptions.exceptions import InvalidDatasetSelection
 
 
 class ContrastiveLearningDataset:
-    def __init__(self, root_folder):
+    def __init__(self, root_folder,args):
         self.root_folder = root_folder
+        self.args = args
 
     @staticmethod
     def get_simclr_pipeline_transform(size, s=1):
@@ -34,7 +35,7 @@ class ContrastiveLearningDataset:
                                                               self.get_simclr_pipeline_transform(96),
                                                               n_views),
                                                           download=True),
-                        'contrastive':lambda: ContrastiveDataset(self.root_folder,split="train",transform= transforms.Compose([transforms.ToTensor()]))}
+                        'contrastive':lambda: ContrastiveDataset(self.root_folder,split=self.args.image_list,transform= transforms.Compose([transforms.ToTensor()]))}
 
         try:
             dataset_fn = valid_datasets[name]

@@ -22,7 +22,7 @@ class ContrastiveDataset(Dataset):
         self.classes = {"No findings":[]}
         for i in CLASS_NAMES:
             self.classes[i] = []
-        with open(split+"_list.txt", "r") as f:
+        with open(split, "r") as f:
             for line in f:
                 items = line.split()
                 image_name= items[0]

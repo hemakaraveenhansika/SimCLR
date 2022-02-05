@@ -71,8 +71,8 @@ def main():
     sampler = ContrastiveBatchSampler(args.batch_size,dataset=train_dataset,drop_last=False)
 
     train_loader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=args.batch_size, shuffle=True,
-        num_workers=args.workers, pin_memory=True, drop_last=True, batch_sampler=sampler)
+        train_dataset,
+        num_workers=args.workers, pin_memory=True, batch_sampler=sampler)
 
     model = ResNetSimCLR(base_model=args.arch, out_dim=args.out_dim)
 

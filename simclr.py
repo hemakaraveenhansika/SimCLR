@@ -67,8 +67,9 @@ class SimCLR(object):
 
         for epoch_counter in range(self.args.epochs):
             for images, _ in tqdm(train_loader):
+                print("train images before",images.size())
                 images = torch.cat(images, dim=0)
-
+                print("train images after",images.size())
                 images = images.to(self.args.device)
 
                 with autocast(enabled=self.args.fp16_precision):

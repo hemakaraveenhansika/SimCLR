@@ -3,6 +3,7 @@ import torch
 import torch.backends.cudnn as cudnn
 from torchvision import models
 from data_aug.contrastive_learning_dataset import ContrastiveLearningDataset
+from data_aug.data import ContrastiveDataset
 from models.resnet_simclr import ResNetSimCLR
 from simclr import SimCLR
 
@@ -50,6 +51,10 @@ parser.add_argument('--temperature', default=0.07, type=float,
 parser.add_argument('--n-views', default=2, type=int, metavar='N',
                     help='Number of views for contrastive learning training.')
 parser.add_argument('--gpu-index', default=0, type=int, help='Gpu index.')
+parser.add_argument('--data_dir', metavar='DATA_DIR', default='/kaggle/input/data/', help='path to dataset dir')
+parser.add_argument('--train_image_list', metavar='train_image_list', default='/kaggle/working/SimCLR/datasets/demo_list.txt', help='path to train dataset dir')
+parser.add_argument('--val_image_list', metavar='val_image_list', default='/kaggle/working/SimCLR/datasets/val_list.txt', help='path to validation dataset dir')
+parser.add_argument('--test_image_list', metavar='test_image_list', default='/kaggle/working/SimCLR/datasets/test_list.txt', help='path to test dataset dir')
 
 
 def main():
@@ -64,9 +69,12 @@ def main():
         args.device = torch.device('cpu')
         args.gpu_index = -1
 
-    dataset = ContrastiveLearningDataset(args.data)
+    # dataset = ContrastiveLearningDataset(args.data)
+    # train_dataset = dataset.get_dataset(args.dataset_name, args.n_views)
 
-    train_dataset = dataset.get_dataset(args.dataset_name, args.n_views)
+    train_dataset = ContrastiveDataset(data_dir=args.data_dir, image_list_file=args.train_image_list)
+
+    # train_dataset = dataset.get_dataset(args.dataset_name, args.n_views)
 
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=args.batch_size, shuffle=True,

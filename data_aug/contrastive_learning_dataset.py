@@ -7,8 +7,8 @@ from exceptions.exceptions import InvalidDatasetSelection
 
 
 class ContrastiveLearningDataset:
-    def __init__(self, root_folder,args):
-        self.root_folder = root_folder
+    def __init__(self,args):
+        self.root_folder = args.data
         self.args = args
 
     @staticmethod

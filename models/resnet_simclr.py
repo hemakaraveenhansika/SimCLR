@@ -17,6 +17,7 @@ class ResNetSimCLR(nn.Module):
                             "chexnet":  DenseNet121(pretrained=False, num_classes=out_dim)}
 
         self.backbone = self._get_basemodel(base_model)
+        print(self.backbone.state_dict().keys())
         dim_mlp = self.backbone.fc.in_features
         self.arch_weights = arch_weights
 

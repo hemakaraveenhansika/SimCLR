@@ -100,7 +100,7 @@ class SimCLR(object):
             train_loss = 0
             epoch_reslts = {}
             epoch_reslts['epoch'] = epoch_counter
-            print("epoch {}".format(epoch_counter))
+            print("\nepoch {}".format(epoch_counter))
             self.model.train()
 
             for images, _ in tqdm(train_loader):

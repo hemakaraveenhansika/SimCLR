@@ -75,8 +75,8 @@ def main():
     dataset = ContrastiveLearningDataset(args)
     train_dataset = dataset.get_dataset(args.dataset_name, args.n_views,args.train_image_list)
     val_dataset = dataset.get_dataset(args.dataset_name, args.n_views,args.val_image_list)
-    train_sampler = ContrastiveBatchSampler(args.batch_size,args.train_image_limit,dataset=train_dataset,drop_last=False)
-    val_sampler = ContrastiveBatchSampler(args.batch_size,args.val_image_limit,dataset=val_dataset,drop_last=False)
+    train_sampler = ContrastiveBatchSampler(args.batch_size,args.train_image_limit,dataset=train_dataset,drop_last=False,seed=int(args.seed))
+    val_sampler = ContrastiveBatchSampler(args.batch_size,args.val_image_limit,dataset=val_dataset,drop_last=False,seed=int(args.seed))
 
     train_loader = torch.utils.data.DataLoader(
         train_dataset,

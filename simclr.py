@@ -184,7 +184,7 @@ class SimCLR(object):
         with torch.no_grad():
             for images, _ in tqdm(valid_loader):
                 # print("\nbefor cat:", len(images), images[0].shape, images[1].shape)
-                images = torch.cat(images, dim=0)
+                # images = torch.cat(images, dim=0)
                 # print("after cat:", images.shape)
 
                 images = images.to(self.args.device)

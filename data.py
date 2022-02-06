@@ -115,7 +115,7 @@ class ContrastiveRandomSampler(Sampler[int]):
             if(self.seed is not None):
                 generator.manual_seed(self.seed)
             else:
-                generator.manual_seed(seed)
+                generator.manual_seed(0)
         else:
             generator = self.generator
 

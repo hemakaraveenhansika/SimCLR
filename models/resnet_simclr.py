@@ -57,7 +57,7 @@ class ResNetSimCLR(nn.Module):
                 checkpoint = torch.load(self.arch_weights)
                 state_dict = checkpoint['state_dict']
                 for key in list(state_dict.keys()):
-                    state_dict[key.replace('.1.', '1.'). replace('.2.', '2.')] = state_dict.pop(key)
+                    state_dict[key[:7].replace('.1.', '1.'). replace('.2.', '2.')] = state_dict.pop(key)
                 model.load_state_dict(state_dict)
                 print("=>  arch weights loaded")
             else:

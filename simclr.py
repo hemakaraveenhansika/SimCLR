@@ -100,6 +100,7 @@ class SimCLR(object):
             train_loss = 0
             epoch_reslts = {}
             epoch_reslts['epoch'] = epoch_counter
+            print("epoch {}".format(epoch_counter))
 
 
             for images, _ in tqdm(train_loader):
@@ -153,7 +154,7 @@ class SimCLR(object):
 
             epoch_reslts['contrastive_train_loss'] = train_loss / len(train_loader)
             epoch_reslts['contrastive_valid_loss'] = valid_loss
-            epoch_reslts['learning_rate'] = self.scheduler.get_lr()[0]
+            epoch_reslts['learning_rate'] = self.scheduler.get_last_lr()[0]
             complete_reslts[epoch_counter] = epoch_reslts
             print(epoch_reslts)
             # warmup for the first 10 epochs

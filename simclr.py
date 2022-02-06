@@ -7,6 +7,7 @@ import torch
 import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
+import numpy as np
 
 from utils import accuracy, save_checkpoint, save_config_file
 
@@ -33,6 +34,7 @@ class SimCLR(object):
         self.writer = SummaryWriter()
         logging.basicConfig(filename=os.path.join(self.writer.log_dir, 'training.log'), level=logging.DEBUG)
         self.criterion = torch.nn.CrossEntropyLoss().to(self.args.device)
+        self.best_valid_loss = np.inf
 
     def info_nce_loss(self, features):
         batch_targets = torch.arange(self.args.batch_size, dtype=torch.long).to(self.args.device)
@@ -58,7 +60,8 @@ class SimCLR(object):
             json.dump(result, f)
         print("logs saved in", result_path)
 
-    def train(self, train_loader):
+    def train(self, train_loader, valid_loader):
+        print("train, valid", len(train_loader), len(valid_loader))
         complete_reslts = {}
 
         if apex_support and self.args.fp16_precision:
@@ -101,19 +104,33 @@ class SimCLR(object):
 
                 self.optimizer.step()
 
-
-
-                if n_iter % self.args.log_every_n_steps == 0:
-                    top1, top5 = accuracy(logits, labels, topk=(1, 5))
-                    self.writer.add_scalar('loss', loss, global_step=n_iter)
-                    self.writer.add_scalar('acc/top1', top1[0], global_step=n_iter)
-                    self.writer.add_scalar('acc/top5', top5[0], global_step=n_iter)
-                    self.writer.add_scalar('learning_rate', self.scheduler.get_lr()[0], global_step=n_iter)
-
+                # if n_iter % self.args.log_every_n_steps == 0:
+                #     top1, top5 = accuracy(logits, labels, topk=(1, 5))
+                #     self.writer.add_scalar('loss', loss, global_step=n_iter)
+                #     self.writer.add_scalar('acc/top1', top1[0], global_step=n_iter)
+                #     self.writer.add_scalar('acc/top5', top5[0], global_step=n_iter)
+                #     self.writer.add_scalar('learning_rate', self.scheduler.get_lr()[0], global_step=n_iter)
 
                 n_iter += 1
 
-            epoch_reslts['contrastive_loss'] = train_loss / len(train_loader)
+            valid_loss = self._validate(self.model, valid_loader)
+            if valid_loss < self.best_valid_loss:
+                # save the best model weights
+                self.best_valid_loss = valid_loss
+                # save model checkpoints
+                checkpoint_name = 'best_checkpoint.pth.tar'
+                save_checkpoint({
+                    'epoch': self.args.epochs,
+                    'best_valid_loss': self.best_valid_loss,
+                    'arch': self.args.arch,
+                    'state_dict': self.model.state_dict(),
+                    'optimizer': self.optimizer.state_dict(),
+                }, is_best=True, filename=os.path.join(self.writer.log_dir, checkpoint_name))
+
+                print("save best model checkpoint in", os.path.join(self.writer.log_dir, checkpoint_name))
+
+            epoch_reslts['contrastive_train_loss'] = train_loss / len(train_loader)
+            epoch_reslts['contrastive_validation_loss'] = valid_loss
             epoch_reslts['learning_rate'] = self.scheduler.get_lr()[0]
             complete_reslts[epoch_counter] = epoch_reslts
             print(epoch_reslts)
@@ -123,16 +140,41 @@ class SimCLR(object):
                 self.scheduler.step()
             # logging.debug(f"Epoch: {epoch_counter}\tLoss: {loss}\tTop1 accuracy: {top1[0]}")
 
+
         self.save_json(complete_reslts, 'training_logs')
         print("Training has finished")
         logging.info("Training has finished.")
+
         # save model checkpoints
-        checkpoint_name = 'checkpoint_{:04d}.pth.tar'.format(self.args.epochs)
+        checkpoint_name = 'currrent_checkpoint.pth.tar'
         save_checkpoint({
             'epoch': self.args.epochs,
+            'best_valid_loss': self.best_valid_loss,
             'arch': self.args.arch,
             'state_dict': self.model.state_dict(),
             'optimizer': self.optimizer.state_dict(),
         }, is_best=False, filename=os.path.join(self.writer.log_dir, checkpoint_name))
+
         logging.info(f"Model checkpoint and metadata has been saved at {self.writer.log_dir}.")
         print(f"Model checkpoint and metadata has been saved at {self.writer.log_dir}.")
+
+    def _validate(self, model, valid_loader):
+        print("validation")
+        model.eval()
+        valid_loss = 0
+        with torch.no_grad():
+            for images, _ in tqdm(valid_loader):
+                print("\nbefor cat:", len(images), images[0].shape, images[1].shape)
+                images = torch.cat(images, dim=0)
+                print("after cat:", images.shape)
+
+                images = images.to(self.args.device)
+
+                features = self.model(images)
+                print("features", features.shape)
+
+                logits, labels = self.info_nce_loss(features)
+                loss = self.criterion(logits, labels)
+                valid_loss += loss.item()
+            valid_loss = valid_loss/len(valid_loader)
+        return valid_loss

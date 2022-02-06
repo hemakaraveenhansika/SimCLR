@@ -51,8 +51,8 @@ parser.add_argument('--n-views', default=2, type=int, metavar='N',
                     help='Number of views for contrastive learning training.')
 parser.add_argument('--gpu-index', default=0, type=int, help='Gpu index.')
 parser.add_argument('--data_dir', metavar='DATA_DIR', default='/kaggle/input/data/', help='path to dataset dir')
-parser.add_argument('--train_image_list', metavar='train_image_list', default='/kaggle/working/SimCLR/datasets/train_list.txt', help='path to train dataset dir')
-parser.add_argument('--val_image_list', metavar='val_image_list', default='/kaggle/working/SimCLR/datasets/val_list.txt', help='path to validation dataset dir')
+parser.add_argument('--train_image_list', metavar='train_image_list', default='/kaggle/working/SimCLR/datasets/demo_train_list.txt', help='path to train dataset dir')
+parser.add_argument('--val_image_list', metavar='val_image_list', default='/kaggle/working/SimCLR/datasets/demo_val_list.txt', help='path to validation dataset dir')
 parser.add_argument('--test_image_list', metavar='test_image_list', default='/kaggle/working/SimCLR/datasets/test_list.txt', help='path to test dataset dir')
 
 
@@ -70,13 +70,16 @@ def main():
 
     dataset = ContrastiveLearningDataset(args)
     train_dataset = dataset.get_dataset(args.dataset_name, args.n_views, args.train_image_list)
+    valid_dataset = dataset.get_dataset(args.dataset_name, args.n_views, args.val_image_list)
 
     # train_dataset = ContrastiveDataset(data_dir=args.data_dir, image_list_file=args.train_image_list)
 
 
-    train_loader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=args.batch_size, shuffle=True,
+    train_loader = torch.utils.data.DataLoader( train_dataset, batch_size=args.batch_size, shuffle=True,
         num_workers=args.workers, pin_memory=True, drop_last=True)
+
+    valid_loader = torch.utils.data.DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=True,
+                                               num_workers=args.workers, pin_memory=True, drop_last=True)
 
     model = ResNetSimCLR(base_model=args.arch, out_dim=args.out_dim)
 
@@ -88,7 +91,7 @@ def main():
     #  It’s a no-op if the 'gpu_index' argument is a negative integer or None.
     with torch.cuda.device(args.gpu_index):
         simclr = SimCLR(model=model, optimizer=optimizer, scheduler=scheduler, args=args)
-        simclr.train(train_loader)
+        simclr.train(train_loader, valid_loader)
 
 
 if __name__ == "__main__":

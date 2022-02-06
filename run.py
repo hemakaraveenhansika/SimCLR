@@ -59,6 +59,7 @@ parser.add_argument('--train-image-limit', default=42405, type=int, help='Train 
 parser.add_argument('--val-image-limit', default=6079, type=int, help='Val images limit')
 parser.add_argument('--resume', metavar='resume', default='/content/SimCLR/currrent_checkpoint.pth.tar', help='path to resume model')
 parser.add_argument('--result_dir', metavar='RESULT_DIR', default='./', help='path to result dir')
+parser.add_argument('--arch-weights',default='./chexnet.pth.tar',type=str, help='path to arch weights')
 
 def main():
     args = parser.parse_args()
@@ -86,7 +87,7 @@ def main():
         val_dataset,
         num_workers=args.workers, pin_memory=True, batch_sampler=val_sampler)
 
-    model = ResNetSimCLR(base_model=args.arch, out_dim=args.out_dim)
+    model = ResNetSimCLR(base_model=args.arch, out_dim=args.out_dim,arch_weights=args.arch_weights)
 
     optimizer = torch.optim.Adam(model.parameters(), args.lr, weight_decay=args.weight_decay)
 

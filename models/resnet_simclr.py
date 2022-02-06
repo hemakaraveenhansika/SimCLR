@@ -15,14 +15,19 @@ class ResNetSimCLR(nn.Module):
                             "resnet50": models.resnet50(pretrained=False, num_classes=out_dim),
                             "resnet101": models.resnet101(pretrained=False, num_classes=out_dim),
                             "chexnet":  DenseNet121(pretrained=False, num_classes=out_dim)}
-                            
+
         self.arch_weights = arch_weights
         self.backbone = self._get_basemodel(base_model)
         print(self.backbone.state_dict().keys())
-        dim_mlp = self.backbone.fc.in_features
+        if(base_model=="chexnet"):
+            dim_mlp = self.backbone.classifier.in_features
+            # add mlp projection head
+            self.backbone.classifier = nn.Sequential(nn.Linear(dim_mlp, dim_mlp), nn.ReLU(), self.backbone.classifier)
+        else:
+            dim_mlp = self.backbone.fc.in_features
+            # add mlp projection head
+            self.backbone.fc = nn.Sequential(nn.Linear(dim_mlp, dim_mlp), nn.ReLU(), self.backbone.fc)
 
-        # add mlp projection head
-        self.backbone.fc = nn.Sequential(nn.Linear(dim_mlp, dim_mlp), nn.ReLU(), self.backbone.fc)
         summary(self.backbone,input_size=(16,3, 224, 224))
 
     def _get_basemodel(self, model_name):

@@ -81,12 +81,13 @@ class ContrastiveRandomSampler(Sampler[int]):
     replacement: bool
 
     def __init__(self, data_source: Sized, replacement: bool = False,
-                 num_samples: Optional[int] = None, generator=None,seed=None) -> None:
+                 num_samples: Optional[int] = None, generator=None,seed=None,cls="none") -> None:
         self.data_source = data_source
         self.replacement = replacement
         self._num_samples = num_samples
         self.generator = generator
         self.seed = seed
+        self.cls=cls
 
         if not isinstance(self.replacement, bool):
             raise TypeError("replacement should be a boolean value, but got "
@@ -122,12 +123,12 @@ class ContrastiveRandomSampler(Sampler[int]):
         if self.replacement:
             for _ in range(self.num_samples // 32):
                 perm = torch.randint(high=n, size=(32,), dtype=torch.int64, generator=generator).tolist()
-                print(perm)
+                print(self.cls,perm)
                 yield from perm
             yield from torch.randint(high=n, size=(self.num_samples % 32,), dtype=torch.int64, generator=generator).tolist()
         else:
             perm = torch.randperm(n, generator=generator).tolist()
-            print(perm)
+            print(self.cls,perm)
             yield from perm
 
     def __len__(self) -> int:
@@ -166,9 +167,9 @@ class ContrastiveBatchSampler(Sampler[List[int]]):
         self.drop_last = drop_last
         self.dataset = dataset
         self.max_image_count = max_image_count
-        self.samplers = [ContrastiveRandomSampler(self.dataset._get_class("No findings"),seed=seed)]
+        self.samplers = [ContrastiveRandomSampler(self.dataset._get_class("No findings"),seed=seed,cls="No findings")]
         for c in range(len(CLASS_NAMES)):
-            self.samplers.append(ContrastiveRandomSampler(self.dataset._get_class(CLASS_NAMES[c]),replacement= True,num_samples = len(self.dataset._get_class("No findings")),seed=seed+c+1))
+            self.samplers.append(ContrastiveRandomSampler(self.dataset._get_class(CLASS_NAMES[c]),replacement= True,num_samples = len(self.dataset._get_class("No findings")),seed=seed+c+1,cls=CLASS_NAMES[c]))
 
     def __iter__(self) -> Iterator[List[int]]:
         batch = []

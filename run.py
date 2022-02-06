@@ -55,7 +55,7 @@ parser.add_argument('--result_dir', metavar='RESULT_DIR', default='./', help='pa
 parser.add_argument('--train_image_list', metavar='train_image_list', default='/kaggle/working/SimCLR/datasets/demo_train_list.txt', help='path to train dataset dir')
 parser.add_argument('--val_image_list', metavar='val_image_list', default='/kaggle/working/SimCLR/datasets/demo_val_list.txt', help='path to validation dataset dir')
 parser.add_argument('--test_image_list', metavar='test_image_list', default='/kaggle/working/SimCLR/datasets/test_list.txt', help='path to test dataset dir')
-parser.add_argument('--resume', metavar='resume', default='/kaggle/working/SimCLR/currrent_checkpoint.pth.tar', help='path to resume model')
+parser.add_argument('--resume', metavar='resume', default='/kaggle/input/simclr-chexnet/SimCLR/currrent_checkpoint.pth.tar', help='path to resume model')
 
 
 def main():

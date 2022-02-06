@@ -121,7 +121,7 @@ class SimCLR(object):
                 # save model checkpoints
                 checkpoint_name = 'best_checkpoint.pth.tar'
                 save_checkpoint({
-                    'epoch': self.args.epoch_counter,
+                    'epoch': epoch_counter,
                     'best_valid_loss': self.best_valid_loss,
                     'arch': self.args.arch,
                     'state_dict': self.model.state_dict(),
@@ -149,7 +149,7 @@ class SimCLR(object):
         # save model checkpoints
         checkpoint_name = 'currrent_checkpoint.pth.tar'
         save_checkpoint({
-            'epoch': self.args.epoch_counter,
+            'epoch': self.args.epochs,
             'best_valid_loss': self.best_valid_loss,
             'arch': self.args.arch,
             'state_dict': self.model.state_dict(),

@@ -14,6 +14,8 @@ model_names = sorted(name for name in models.__dict__
 parser = argparse.ArgumentParser(description='PyTorch SimCLR')
 parser.add_argument('-data', metavar='DIR', default='./data/images',
                     help='path to dataset')
+parser.add_argument('-record_dir', metavar='record_dir', default='./', help='path to record_dir')
+
 parser.add_argument('-dataset-name', default='contrastive',
                     help='dataset name', choices=['stl10', 'cifar10','contrastive'])
 parser.add_argument('-a', '--arch', metavar='ARCH', default='resnet18',
@@ -25,7 +27,7 @@ parser.add_argument('-j', '--workers', default=12, type=int, metavar='N',
                     help='number of data loading workers (default: 32)')
 parser.add_argument('--epochs', default=200, type=int, metavar='N',
                     help='number of total epochs to run')
-parser.add_argument('-b', '--batch-size', default=256, type=int,
+parser.add_argument('-b', '--batch-size', default=8, type=int,
                     metavar='N',
                     help='mini-batch size (default: 256), this is the total '
                          'batch size of all GPUs on the current node when '
@@ -51,9 +53,10 @@ parser.add_argument('--temperature', default=0.07, type=float,
 parser.add_argument('--n-views', default=2, type=int, metavar='N',
                     help='Number of views for contrastive learning training.')
 parser.add_argument('--gpu-index', default=0, type=int, help='Gpu index.')
-parser.add_argument('--image-list', default="./data/train_list.txt", type=str, help='Image name list path')
+parser.add_argument('--train-image-list', default="./data/train_list.txt", type=str, help='Image name list path')
+parser.add_argument('--val-image-list', default="./data/val_list.txt", type=str, help='Validation Image name list path')
 parser.add_argument('--train-image-limit', default=42405, type=int, help='Train images limit')
-parser.add_argument('--test-image-limit', default=42405, type=int, help='Test images limit')
+parser.add_argument('--val-image-limit', default=42405, type=int, help='Val images limit')
 
 
 def main():
@@ -69,12 +72,18 @@ def main():
         args.gpu_index = -1
 
     dataset = ContrastiveLearningDataset(args)
-    train_dataset = dataset.get_dataset(args.dataset_name, args.n_views)
-    sampler = ContrastiveBatchSampler(args.batch_size,args.train_image_limit,dataset=train_dataset,drop_last=False)
+    train_dataset = dataset.get_dataset(args.dataset_name, args.n_views,args.train_image_list)
+    val_dataset = dataset.get_dataset(args.dataset_name, args.n_views,args.val_image_list)
+    train_sampler = ContrastiveBatchSampler(args.batch_size,args.train_image_limit,dataset=train_dataset,drop_last=False)
+    val_sampler = ContrastiveBatchSampler(args.batch_size,args.val_image_limit,dataset=val_dataset,drop_last=False)
 
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
-        num_workers=args.workers, pin_memory=True, batch_sampler=sampler)
+        num_workers=args.workers, pin_memory=True, batch_sampler=train_sampler)
+
+    val_loader = torch.utils.data.DataLoader(
+        val_dataset,
+        num_workers=args.workers, pin_memory=True, batch_sampler=val_sampler)
 
     model = ResNetSimCLR(base_model=args.arch, out_dim=args.out_dim)
 
@@ -86,7 +95,7 @@ def main():
     #  It’s a no-op if the 'gpu_index' argument is a negative integer or None.
     with torch.cuda.device(args.gpu_index):
         simclr = SimCLR(model=model, optimizer=optimizer, scheduler=scheduler, args=args)
-        simclr.train(train_loader)
+        simclr.train(train_loader,val_loader)
 
 
 if __name__ == "__main__":

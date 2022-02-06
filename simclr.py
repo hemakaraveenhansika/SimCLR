@@ -34,6 +34,7 @@ class SimCLR(object):
         self.writer = SummaryWriter()
         logging.basicConfig(filename=os.path.join(self.writer.log_dir, 'training.log'), level=logging.DEBUG)
         self.criterion = torch.nn.CrossEntropyLoss().to(self.args.device)
+        self.start_epoch = 1
         self.best_valid_loss = np.inf
 
     def info_nce_loss(self, features):
@@ -76,7 +77,7 @@ class SimCLR(object):
         logging.info(f"Start SimCLR training for {self.args.epochs} epochs.")
         logging.info(f"Training with gpu: {self.args.disable_cuda}.")
 
-        for epoch_counter in range(self.args.epochs):
+        for epoch_counter in range(self.start_epoch, self.args.epochs+1):
             train_loss = 0
             epoch_reslts = {}
             epoch_reslts['epoch'] = epoch_counter
@@ -120,14 +121,14 @@ class SimCLR(object):
                 # save model checkpoints
                 checkpoint_name = 'best_checkpoint.pth.tar'
                 save_checkpoint({
-                    'epoch': self.args.epochs,
+                    'epoch': self.args.epoch_counter,
                     'best_valid_loss': self.best_valid_loss,
                     'arch': self.args.arch,
                     'state_dict': self.model.state_dict(),
                     'optimizer': self.optimizer.state_dict(),
-                }, is_best=True, filename=os.path.join(self.writer.log_dir, checkpoint_name))
+                }, is_best=True, filename=os.path.join(self.args.result_dir, checkpoint_name))
 
-                print("save best model checkpoint in", os.path.join(self.writer.log_dir, checkpoint_name))
+                print("save best model checkpoint in", os.path.join(self.args.result_dir, checkpoint_name))
 
             epoch_reslts['contrastive_train_loss'] = train_loss / len(train_loader)
             epoch_reslts['contrastive_validation_loss'] = valid_loss
@@ -148,15 +149,15 @@ class SimCLR(object):
         # save model checkpoints
         checkpoint_name = 'currrent_checkpoint.pth.tar'
         save_checkpoint({
-            'epoch': self.args.epochs,
+            'epoch': self.args.epoch_counter,
             'best_valid_loss': self.best_valid_loss,
             'arch': self.args.arch,
             'state_dict': self.model.state_dict(),
             'optimizer': self.optimizer.state_dict(),
-        }, is_best=False, filename=os.path.join(self.writer.log_dir, checkpoint_name))
+        }, is_best=False, filename=os.path.join(self.args.result_dir, checkpoint_name))
 
-        logging.info(f"Model checkpoint and metadata has been saved at {self.writer.log_dir}.")
-        print(f"Model checkpoint and metadata has been saved at {self.writer.log_dir}.")
+        # logging.info(f"Model checkpoint and metadata has been saved at {self.writer.log_dir}.")
+        print(f"Model checkpoint and metadata has been saved at {os.path.join(self.args.result_dir, checkpoint_name)}.")
 
     def _validate(self, model, valid_loader):
         print("validation")

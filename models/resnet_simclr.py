@@ -20,9 +20,9 @@ class ResNetSimCLR(nn.Module):
         self.backbone = self._get_basemodel(base_model)
         print(self.backbone.state_dict().keys())
         if(base_model=="chexnet"):
-            dim_mlp = self.backbone.classifier.in_features
+            dim_mlp = self.backbone.densenet121.classifier.in_features
             # add mlp projection head
-            self.backbone.classifier = nn.Sequential(nn.Linear(dim_mlp, dim_mlp), nn.ReLU(), self.backbone.classifier)
+            self.backbone.densenet121.classifier = nn.Sequential(nn.Linear(dim_mlp, dim_mlp), nn.ReLU(), self.backbone.densenet121.classifier)
         else:
             dim_mlp = self.backbone.fc.in_features
             # add mlp projection head

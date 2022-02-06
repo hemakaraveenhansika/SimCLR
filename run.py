@@ -56,7 +56,7 @@ parser.add_argument('--gpu-index', default=0, type=int, help='Gpu index.')
 parser.add_argument('--train-image-list', default="./data/train_list.txt", type=str, help='Image name list path')
 parser.add_argument('--val-image-list', default="./data/val_list.txt", type=str, help='Validation Image name list path')
 parser.add_argument('--train-image-limit', default=42405, type=int, help='Train images limit')
-parser.add_argument('--val-image-limit', default=42405, type=int, help='Val images limit')
+parser.add_argument('--val-image-limit', default=6079, type=int, help='Val images limit')
 parser.add_argument('--resume', metavar='resume', default='/content/SimCLR/currrent_checkpoint.pth.tar', help='path to resume model')
 parser.add_argument('--result_dir', metavar='RESULT_DIR', default='./', help='path to result dir')
 

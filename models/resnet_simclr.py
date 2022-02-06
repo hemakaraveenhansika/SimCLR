@@ -20,16 +20,16 @@ class ResNetSimCLR(nn.Module):
     def _get_basemodel(self, model_name):
         try:
             model = self.resnet_dict[model_name]
-            layer = model.conv1
-            new_layer = nn.Conv2d(in_channels=1, 
-                  out_channels=layer.out_channels, 
-                  kernel_size=layer.kernel_size, 
-                  stride=layer.stride, 
-                  padding=layer.padding,
-                  bias=layer.bias)
-            # new_layer.weight[:, :1, :, :] = layer.weight[:, :1, :, :].clone()
-            new_layer.weight = nn.Parameter(new_layer.weight)
-            model.conv1 = new_layer
+            # layer = model.conv1
+            # new_layer = nn.Conv2d(in_channels=1, 
+            #       out_channels=layer.out_channels, 
+            #       kernel_size=layer.kernel_size, 
+            #       stride=layer.stride, 
+            #       padding=layer.padding,
+            #       bias=layer.bias)
+            # # new_layer.weight[:, :1, :, :] = layer.weight[:, :1, :, :].clone()
+            # new_layer.weight = nn.Parameter(new_layer.weight)
+            # model.conv1 = new_layer
 
         except KeyError:
             raise InvalidBackboneError(

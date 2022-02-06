@@ -61,6 +61,19 @@ class SimCLR(object):
             json.dump(result, f)
         print("logs saved in", result_path)
 
+    def resume_checkpoint(self, resume_path):
+        try:
+            resume_path = str(resume_path)
+            print("Loading checkpoint: {} ...".format(resume_path))
+            checkpoint = torch.load(resume_path)
+            self.start_epoch = checkpoint['epoch'] + 1
+            self.best_valid_loss = checkpoint['best_valid_loss']
+            self.model.load_state_dict(checkpoint['state_dict'])
+            self.optimizer.load_state_dict(checkpoint['optimizer'])
+            print("Checkpoint loaded. Resume training from epoch {}".format(self.start_epoch))
+        except Exception as err:
+            print("[Load Checkpoint Failed {}!]\n".format(err))
+
     def train(self, train_loader, valid_loader):
         print("train, valid", len(train_loader), len(valid_loader))
         complete_reslts = {}
@@ -76,6 +89,9 @@ class SimCLR(object):
         n_iter = 0
         logging.info(f"Start SimCLR training for {self.args.epochs} epochs.")
         logging.info(f"Training with gpu: {self.args.disable_cuda}.")
+
+        if self.args.resume is not None:
+            self.resume_checkpoint(self.args.resume)
 
         for epoch_counter in range(self.start_epoch, self.args.epochs+1):
             train_loss = 0
@@ -131,7 +147,7 @@ class SimCLR(object):
                 print("save best model checkpoint in", os.path.join(self.args.result_dir, checkpoint_name))
 
             epoch_reslts['contrastive_train_loss'] = train_loss / len(train_loader)
-            epoch_reslts['contrastive_validation_loss'] = valid_loss
+            epoch_reslts['contrastive_valid_loss'] = valid_loss
             epoch_reslts['learning_rate'] = self.scheduler.get_lr()[0]
             complete_reslts[epoch_counter] = epoch_reslts
             print(epoch_reslts)

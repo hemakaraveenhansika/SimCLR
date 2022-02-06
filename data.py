@@ -87,6 +87,7 @@ class ContrastiveRandomSampler(Sampler[int]):
         self._num_samples = num_samples
         self.generator = generator
         self.seed = seed
+        print("sampler init")
 
         if not isinstance(self.replacement, bool):
             raise TypeError("replacement should be a boolean value, but got "
@@ -109,6 +110,7 @@ class ContrastiveRandomSampler(Sampler[int]):
 
     def __iter__(self) -> Iterator[int]:
         n = len(self.data_source)
+        print("iter called")
         if self.generator is None:
             seed = int(torch.empty((), dtype=torch.int64).random_().item())
             generator = torch.Generator()

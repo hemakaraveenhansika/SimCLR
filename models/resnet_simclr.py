@@ -1,3 +1,4 @@
+from email.policy import strict
 import torch.nn as nn
 import torchvision.models as models
 import os 
@@ -34,17 +35,6 @@ class ResNetSimCLR(nn.Module):
         try:
             model = self.resnet_dict[model_name]
             model = self.load_weights(model_name,model)
-            # layer = model.conv1
-            # new_layer = nn.Conv2d(in_channels=1, 
-            #       out_channels=layer.out_channels, 
-            #       kernel_size=layer.kernel_size, 
-            #       stride=layer.stride, 
-            #       padding=layer.padding,
-            #       bias=layer.bias)
-            # # new_layer.weight[:, :1, :, :] = layer.weight[:, :1, :, :].clone()
-            # new_layer.weight = nn.Parameter(new_layer.weight)
-            # model.conv1 = new_layer
-
         except KeyError:
             raise InvalidBackboneError(
                 "Invalid backbone architecture. Check the config file and pass one of: resnet18 or resnet50")
@@ -58,7 +48,7 @@ class ResNetSimCLR(nn.Module):
                 state_dict = checkpoint['state_dict']
                 for key in list(state_dict.keys()):
                     state_dict[key[7:].replace('.1.', '1.'). replace('.2.', '2.')] = state_dict.pop(key)
-                model.load_state_dict(state_dict)
+                model.load_state_dict(state_dict,strict=False)
                 print("=>  arch weights loaded")
             else:
                 print("=> no arch weights found")

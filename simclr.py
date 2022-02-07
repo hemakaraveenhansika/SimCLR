@@ -10,6 +10,7 @@ from tqdm import tqdm
 from utils import save_config_file, accuracy, save_checkpoint
 import numpy as np
 import json
+import wandb
 
 torch.manual_seed(0)
 
@@ -96,6 +97,7 @@ class SimCLR(object):
         if self.args.resume is not None:
             self.resume_checkpoint(self.args.resume)
 
+        wandb.watch(self.model)
         for epoch_counter in range(self.start_epoch, self.args.epochs+1):
             train_loss = 0
             epoch_reslts = {}
@@ -137,26 +139,31 @@ class SimCLR(object):
                 n_iter += 1
 
             valid_loss = self._validate(self.model, valid_loader)
+
+            is_best=False
+            checkpoint_name = "last_checkpoint.pth.tar"
             if valid_loss < self.best_valid_loss:
                 # save the best model weights
+                is_best = True
                 self.best_valid_loss = valid_loss
                 # save model checkpoints
                 checkpoint_name = 'best_checkpoint.pth.tar'
-                save_checkpoint({
-                    'epoch': epoch_counter,
-                    'best_valid_loss': self.best_valid_loss,
-                    'arch': self.args.arch,
-                    'state_dict': self.model.state_dict(),
-                    'optimizer': self.optimizer.state_dict(),
-                }, is_best=True, filename=os.path.join(self.args.result_dir, checkpoint_name))
+            save_checkpoint({
+                'epoch': epoch_counter,
+                'best_valid_loss': self.best_valid_loss,
+                'arch': self.args.arch,
+                'state_dict': self.model.state_dict(),
+                'optimizer': self.optimizer.state_dict(),
+            }, is_best=is_best, filename=os.path.join(self.args.result_dir, checkpoint_name))
 
-                print("save best model checkpoint in", os.path.join(self.args.result_dir, checkpoint_name))
+            print("save checkpoint in", os.path.join(self.args.result_dir, checkpoint_name))
 
             epoch_reslts['contrastive_train_loss'] = train_loss / len(train_loader)
             epoch_reslts['contrastive_valid_loss'] = valid_loss
             epoch_reslts['learning_rate'] = self.scheduler.get_last_lr()[0]
             complete_reslts[epoch_counter] = epoch_reslts
             print(epoch_reslts)
+            wandb.log(epoch_reslts)
             # warmup for the first 10 epochs
             if epoch_counter >= 10:
                 self.scheduler.step()

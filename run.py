@@ -6,6 +6,7 @@ from data import ContrastiveBatchSampler
 from data_aug.contrastive_learning_dataset import ContrastiveLearningDataset
 from models.resnet_simclr import ResNetSimCLR
 from simclr import SimCLR
+import wandb
 
 model_names = sorted(name for name in models.__dict__
                      if name.islower() and not name.startswith("__")
@@ -60,9 +61,12 @@ parser.add_argument('--val-image-limit', default=6079, type=int, help='Val image
 parser.add_argument('--resume', metavar='resume', default='/content/SimCLR/currrent_checkpoint.pth.tar', help='path to resume model')
 parser.add_argument('--result_dir', metavar='RESULT_DIR', default='./', help='path to result dir')
 parser.add_argument('--arch-weights',default='./chexnet.pth.tar',type=str, help='path to arch weights')
+parser.add_argument('--wandb_id', type=str, help='Wandb run id.')
 
 def main():
     args = parser.parse_args()
+    wandb.init(id=args.wandb_id, project="medicap-contrastive", entity="vidura", resume=True)
+
     assert args.n_views == 2, "Only two view training is supported. Please use --n-views 2."
     # check if gpu training is available
     if not args.disable_cuda and torch.cuda.is_available():

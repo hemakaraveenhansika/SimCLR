@@ -2,26 +2,16 @@ import logging
 import os
 import sys
 
-import json
 import torch
 import torch.nn.functional as F
+from torch.cuda.amp import GradScaler, autocast
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
+from utils import save_config_file, accuracy, save_checkpoint
 import numpy as np
-
-from utils import accuracy, save_checkpoint, save_config_file
+import json
 
 torch.manual_seed(0)
-
-apex_support = False
-try:
-    sys.path.append('./apex')
-    from apex import amp
-
-    apex_support = True
-except:
-    print("Please install apex for mixed precision training from: https://github.com/NVIDIA/apex")
-    apex_support = False
 
 
 class SimCLR(object):
@@ -38,19 +28,35 @@ class SimCLR(object):
         self.best_valid_loss = np.inf
 
     def info_nce_loss(self, features):
-        batch_targets = torch.arange(self.args.batch_size, dtype=torch.long).to(self.args.device)
-        batch_targets = torch.cat(self.args.n_views * [batch_targets])
+
+        labels = torch.cat([torch.arange(self.args.batch_size) for i in range(self.args.n_views)], dim=0)
+        labels = (labels.unsqueeze(0) == labels.unsqueeze(1)).float()
+        labels = labels.to(self.args.device)
 
         features = F.normalize(features, dim=1)
 
         similarity_matrix = torch.matmul(features, features.T)
         # assert similarity_matrix.shape == (
         #     self.args.n_views * self.args.batch_size, self.args.n_views * self.args.batch_size)
+        # assert similarity_matrix.shape == labels.shape
 
-        mask = torch.eye(len(batch_targets)).to(self.args.device)
-        similarities = similarity_matrix[~mask.bool()].view(similarity_matrix.shape[0], -1)
-        similarities = similarities / self.args.temperature
-        return similarities, batch_targets
+        # discard the main diagonal from both: labels and similarities matrix
+        mask = torch.eye(labels.shape[0], dtype=torch.bool).to(self.args.device)
+        labels = labels[~mask].view(labels.shape[0], -1)
+        similarity_matrix = similarity_matrix[~mask].view(similarity_matrix.shape[0], -1)
+        # assert similarity_matrix.shape == labels.shape
+
+        # select and combine multiple positives
+        positives = similarity_matrix[labels.bool()].view(labels.shape[0], -1)
+
+        # select only the negatives the negatives
+        negatives = similarity_matrix[~labels.bool()].view(similarity_matrix.shape[0], -1)
+
+        logits = torch.cat([positives, negatives], dim=1)
+        labels = torch.zeros(logits.shape[0], dtype=torch.long).to(self.args.device)
+
+        logits = logits / self.args.temperature
+        return logits, labels
 
     def save_json(self, result, record_name):
         result_path = self.args.record_dir
@@ -78,11 +84,8 @@ class SimCLR(object):
         print("train, valid", len(train_loader), len(valid_loader))
         complete_reslts = {}
 
-        if apex_support and self.args.fp16_precision:
-            logging.debug("Using apex for fp16 precision training.")
-            self.model, self.optimizer = amp.initialize(self.model, self.optimizer,
-                                                        opt_level='O2',
-                                                        keep_batchnorm_fp32=True)
+        scaler = GradScaler(enabled=self.args.fp16_precision)
+
         # save config file
         save_config_file(self.writer.log_dir, self.args)
 
@@ -97,29 +100,30 @@ class SimCLR(object):
             train_loss = 0
             epoch_reslts = {}
             epoch_reslts['epoch'] = epoch_counter
+            print("\nepoch {}".format(epoch_counter))
+            self.model.train()
 
             for images, _ in tqdm(train_loader):
-                # print("\nbefor cat:", len(images), images[0].shape, images[1].shape)
+                print("\nbefor cat:", len(images), images[0].shape, images[1].shape)
                 images = torch.cat(images, dim=0)
-                # print("after cat:", images.shape)
+                print("after cat:", images.shape)
 
                 images = images.to(self.args.device)
 
-                features = self.model(images)
-                # print("features", features.shape)
+                with autocast(enabled=self.args.fp16_precision):
+                    features = self.model(images)
+                    print("features:", features.shape)
 
-                logits, labels = self.info_nce_loss(features)
-                loss = self.criterion(logits, labels)
-                train_loss += loss.item()
+                    logits, labels = self.info_nce_loss(features)
+                    loss = self.criterion(logits, labels)
+                    train_loss += loss.item()
 
                 self.optimizer.zero_grad()
-                if apex_support and self.args.fp16_precision:
-                    with amp.scale_loss(loss, self.optimizer) as scaled_loss:
-                        scaled_loss.backward()
-                else:
-                    loss.backward()
 
-                self.optimizer.step()
+                scaler.scale(loss).backward()
+
+                scaler.step(self.optimizer)
+                scaler.update()
 
                 # if n_iter % self.args.log_every_n_steps == 0:
                 #     top1, top5 = accuracy(logits, labels, topk=(1, 5))

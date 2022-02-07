@@ -48,6 +48,8 @@ class ResNetSimCLR(nn.Module):
                 state_dict = checkpoint['state_dict']
                 for key in list(state_dict.keys()):
                     state_dict[key[7:].replace('.1.', '1.'). replace('.2.', '2.')] = state_dict.pop(key)
+                del state_dict["densenet121.classifier.0.bias"]
+                del state_dict["densenet121.classifier.0.weight"]
                 model.load_state_dict(state_dict,strict=False)
                 print("=>  arch weights loaded")
             else:

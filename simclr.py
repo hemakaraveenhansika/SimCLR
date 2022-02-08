@@ -10,6 +10,7 @@ from tqdm import tqdm
 from utils import save_config_file, accuracy, save_checkpoint
 import numpy as np
 import json
+import wandb
 
 torch.manual_seed(0)
 
@@ -96,6 +97,7 @@ class SimCLR(object):
         if self.args.resume is not None:
             self.resume_checkpoint(self.args.resume)
 
+        wandb.watch(self.model)
         for epoch_counter in range(self.start_epoch, self.args.epochs+1):
             train_loss = 0
             epoch_reslts = {}
@@ -104,15 +106,15 @@ class SimCLR(object):
             self.model.train()
 
             for images, _ in tqdm(train_loader):
-                print("\nbefor cat:", len(images), images[0].shape, images[1].shape)
+                # print("\nbefor cat:", len(images), images[0].shape, images[1].shape)
                 images = torch.cat(images, dim=0)
-                print("after cat:", images.shape)
+                # print("after cat:", images.shape)
 
                 images = images.to(self.args.device)
 
                 with autocast(enabled=self.args.fp16_precision):
                     features = self.model(images)
-                    print("features:", features.shape)
+                    # print("features:", features.shape)
 
                     logits, labels = self.info_nce_loss(features)
                     loss = self.criterion(logits, labels)
@@ -155,6 +157,7 @@ class SimCLR(object):
             epoch_reslts['learning_rate'] = self.scheduler.get_lr()[0]
             complete_reslts[epoch_counter] = epoch_reslts
             print(epoch_reslts)
+            wandb.log(epoch_reslts)
 
             # warmup for the first 10 epochs
             if epoch_counter >= 10:

@@ -3,13 +3,14 @@ import shutil
 
 import torch
 import yaml
-
+import wandb
 
 def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
     torch.save(state, filename)
+    wandb.save(filename, policy="now")
     if is_best:
         shutil.copyfile(filename, 'model_best.pth.tar')
-
+        wandb.save('model_best.pth.tar', policy="now")
 
 def save_config_file(model_checkpoints_folder, args):
     if not os.path.exists(model_checkpoints_folder):

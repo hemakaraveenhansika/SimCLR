@@ -5,7 +5,7 @@ from torchvision import models
 from data_aug.contrastive_learning_dataset import ContrastiveLearningDataset
 from models.resnet_simclr import ResNetSimCLR
 from simclr import SimCLR
-# import wandb
+import wandb
 
 model_names = sorted(name for name in models.__dict__
                      if name.islower() and not name.startswith("__")
@@ -62,6 +62,8 @@ parser.add_argument('--wandb_id', type=str, help='Wandb run id.')
 
 def main():
     args = parser.parse_args()
+    wandb.init(id=args.wandb_id, project="medicap-contrastive", entity="raveen_hansika", resume=True)
+
     assert args.n_views == 2, "Only two view training is supported. Please use --n-views 2."
     # check if gpu training is available
     if not args.disable_cuda and torch.cuda.is_available():

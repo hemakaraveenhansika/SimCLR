@@ -53,7 +53,6 @@ class ContrastiveDataset(Dataset):
         """
         image_name = self.image_names[index]
         image = Image.open(image_name).convert('RGB')
-        print("image", image.shape)
         label = self.labels[index]
         if self.transform is not None:
             image = self.transform(image)

@@ -37,13 +37,10 @@ class ContrastiveDataset(Dataset):
 
         """Return a set of data augmentation transformations as described in the SimCLR paper."""
         color_jitter = transforms.ColorJitter(0.8 * s, 0.8 * s, 0.8 * s, 0.2 * s)
-        data_transforms = transforms.Compose([
-                                              # transforms.RandomResizedCrop(size=size),
-                                              # transforms.RandomApply([color_jitter], p=0.8),
+        data_transforms = transforms.Compose([transforms.RandomResizedCrop(size=size),
+                                              transforms.RandomApply([color_jitter], p=0.8),
                                               # transforms.RandomGrayscale(p=0.2),
                                               # GaussianBlur(kernel_size=int(0.1 * size)),
-
-                                              transforms.Resize(size),
                                               transforms.ToTensor()])
         return data_transforms
 
@@ -56,6 +53,7 @@ class ContrastiveDataset(Dataset):
         """
         image_name = self.image_names[index]
         image = Image.open(image_name).convert('RGB')
+        print("image", image.shape)
         label = self.labels[index]
         if self.transform is not None:
             image = self.transform(image)

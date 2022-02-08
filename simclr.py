@@ -103,7 +103,7 @@ class SimCLR(object):
             epoch_reslts = {}
             epoch_reslts['epoch'] = epoch_counter
             print("\nepoch {}".format(epoch_counter))
-            self.model.train()
+            # self.model.train()
 
             for images, _ in tqdm(train_loader):
                 # if(type(images) is list):

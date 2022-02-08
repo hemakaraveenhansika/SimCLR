@@ -103,7 +103,7 @@ class SimCLR(object):
             epoch_reslts = {}
             epoch_reslts['epoch'] = epoch_counter
             print("\nepoch {}".format(epoch_counter))
-            # self.model.train()
+            self.model.train()
 
             for images, _ in tqdm(train_loader):
                 # if(type(images) is list):
@@ -189,7 +189,7 @@ class SimCLR(object):
 
     def _validate(self, model, valid_loader):
         print("validation")
-        # model.eval()
+        model.eval()
         valid_loss = 0
         with torch.no_grad():
             for images, _ in tqdm(valid_loader):

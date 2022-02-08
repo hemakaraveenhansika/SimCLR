@@ -187,7 +187,7 @@ class SimCLR(object):
 
     def _validate(self, model, valid_loader):
         print("validation")
-        model.eval()
+        # model.eval()
         valid_loss = 0
         with torch.no_grad():
             for images, _ in tqdm(valid_loader):

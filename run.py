@@ -62,6 +62,7 @@ parser.add_argument('--resume', metavar='resume', default='/content/SimCLR/currr
 parser.add_argument('--result_dir', metavar='RESULT_DIR', default='./', help='path to result dir')
 parser.add_argument('--arch-weights',default='./chexnet.pth.tar',type=str, help='path to arch weights')
 parser.add_argument('--wandb_id', type=str, help='Wandb run id.')
+parser.add_argument('--mode', type=str,default="train",choices=["train","finetune"], help='Wandb run id.')
 
 def main():
     args = parser.parse_args()

@@ -10,24 +10,27 @@ from torchinfo import summary
 
 class ResNetSimCLR(nn.Module):
 
-    def __init__(self, base_model, out_dim,arch_weights=""):
+    def __init__(self, base_model, out_dim,arch_weights="",mode="pretrain",clsses=15):
         super(ResNetSimCLR, self).__init__()
+        if(mode=="finetune"):
+            num_classes = clsses
         self.resnet_dict = {"resnet18": models.resnet18(pretrained=False, num_classes=out_dim),
                             "resnet50": models.resnet50(pretrained=False, num_classes=out_dim),
                             "resnet101": models.resnet101(pretrained=False, num_classes=out_dim),
-                            "chexnet":  DenseNet121(pretrained=False, num_classes=out_dim)}
+                            "chexnet":  DenseNet121(pretrained=False, num_classes=out_dim,mode=mode)}
 
         self.arch_weights = arch_weights
         self.backbone = self._get_basemodel(base_model)
-        print(self.backbone.state_dict().keys())
-        if(base_model=="chexnet"):
-            dim_mlp = self.backbone.densenet121.classifier[0].in_features
-            # add mlp projection head
-            self.backbone.densenet121.classifier = nn.Sequential(nn.Linear(dim_mlp, dim_mlp), nn.ReLU(), self.backbone.densenet121.classifier[0])
-        else:
-            dim_mlp = self.backbone.fc.in_features
-            # add mlp projection head
-            self.backbone.fc = nn.Sequential(nn.Linear(dim_mlp, dim_mlp), nn.ReLU(), self.backbone.fc)
+
+        if(mode=="pretrain"):
+            if(base_model=="chexnet"):
+                dim_mlp = self.backbone.densenet121.classifier[0].in_features
+                # add mlp projection head
+                self.backbone.densenet121.classifier = nn.Sequential(nn.Linear(dim_mlp, dim_mlp), nn.ReLU(), self.backbone.densenet121.classifier[0])
+            else:
+                dim_mlp = self.backbone.fc.in_features
+                # add mlp projection head
+                self.backbone.fc = nn.Sequential(nn.Linear(dim_mlp, dim_mlp), nn.ReLU(), self.backbone.fc)
 
         summary(self.backbone,input_size=(16,3, 224, 224))
 

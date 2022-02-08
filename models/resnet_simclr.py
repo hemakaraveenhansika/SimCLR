@@ -36,6 +36,7 @@ class ResNetSimCLR(nn.Module):
 
     def _get_basemodel(self, model_name):
         try:
+            print("loading {} model".format(model_name))
             model = self.resnet_dict[model_name]
             model = self.load_weights(model_name,model)
         except KeyError:

@@ -5,10 +5,11 @@ from torchvision import models
 from data_aug.contrastive_learning_dataset import ContrastiveLearningDataset
 from models.resnet_simclr import ResNetSimCLR
 from simclr import SimCLR
+# import wandb
 
 model_names = sorted(name for name in models.__dict__
                      if name.islower() and not name.startswith("__")
-                     and callable(models.__dict__[name]))
+                     and callable(models.__dict__[name])) +["chexnet"]
 
 parser = argparse.ArgumentParser(description='PyTorch SimCLR')
 parser.add_argument('-data', metavar='DIR', default='./datasets', help='path to dataset')
@@ -57,6 +58,7 @@ parser.add_argument('--val_image_list', metavar='val_image_list', default='/kagg
 parser.add_argument('--test_image_list', metavar='test_image_list', default='/kaggle/working/SimCLR/datasets/test_list.txt', help='path to test dataset dir')
 parser.add_argument('--resume', metavar='resume', default='/kaggle/input/simclr-chexnet/SimCLR/currrent_checkpoint.pth.tar', help='path to resume model')
 parser.add_argument('--arch-weights',default='./models/chexnet.pth.tar',type=str, help='path to arch weights')
+parser.add_argument('--wandb_id', type=str, help='Wandb run id.')
 
 def main():
     args = parser.parse_args()

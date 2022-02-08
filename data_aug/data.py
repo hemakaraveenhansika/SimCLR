@@ -31,16 +31,19 @@ class ContrastiveDataset(Dataset):
 
         self.image_names = image_names
         self.labels = labels
-        self.transform = ContrastiveLearningViewGenerator( self.get_simclr_pipeline_transform(256), 2)
+        self.transform = ContrastiveLearningViewGenerator( self.get_medicap_contrastive_transform(256), 2)
 
-    def get_simclr_pipeline_transform(self, size, s=1):
+    def get_medicap_contrastive_transform(self, size, s=1):
 
         """Return a set of data augmentation transformations as described in the SimCLR paper."""
         color_jitter = transforms.ColorJitter(0.8 * s, 0.8 * s, 0.8 * s, 0.2 * s)
-        data_transforms = transforms.Compose([transforms.RandomResizedCrop(size=size),
-                                              transforms.RandomApply([color_jitter], p=0.8),
+        data_transforms = transforms.Compose([
+                                              # transforms.RandomResizedCrop(size=size),
+                                              # transforms.RandomApply([color_jitter], p=0.8),
                                               # transforms.RandomGrayscale(p=0.2),
                                               # GaussianBlur(kernel_size=int(0.1 * size)),
+
+                                              transforms.Resize(size),
                                               transforms.ToTensor()])
         return data_transforms
 

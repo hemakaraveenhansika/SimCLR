@@ -40,7 +40,7 @@ class ContrastiveDataset(Dataset):
         data_transforms = transforms.Compose([transforms.RandomResizedCrop(size=size),
                                               transforms.RandomApply([color_jitter], p=0.8),
                                               # transforms.RandomGrayscale(p=0.2),
-                                              GaussianBlur(kernel_size=int(0.1 * size)),
+                                              # GaussianBlur(kernel_size=int(0.1 * size)),
                                               transforms.ToTensor()])
         return data_transforms
 

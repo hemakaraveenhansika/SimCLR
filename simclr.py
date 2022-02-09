@@ -136,3 +136,81 @@ class SimCLR(object):
         }, is_best=False, filename=os.path.join(self.writer.log_dir, checkpoint_name))
         logging.info(f"Model checkpoint and metadata has been saved at {self.writer.log_dir}.")
         print(f"Model checkpoint and metadata has been saved at {self.writer.log_dir}.")
+
+    def finetune(self, finetune_loader):
+
+        complete_reslts = {}
+
+        if apex_support and self.args.fp16_precision:
+            logging.debug("Using apex for fp16 precision finetuning.")
+            self.model, self.optimizer = amp.initialize(self.model, self.optimizer,
+                                                        opt_level='O2',
+                                                        keep_batchnorm_fp32=True)
+        # save config file
+        save_config_file(self.writer.log_dir, self.args)
+
+        n_iter = 0
+        logging.info(f"Start SimCLR finetuning for {self.args.epochs} epochs.")
+        logging.info(f"Training with gpu: {self.args.disable_cuda}.")
+
+        for epoch_counter in range(self.args.epochs):
+            train_loss = 0
+            epoch_reslts = {}
+            epoch_reslts['epoch'] = epoch_counter
+
+            for images, _ in tqdm(finetune_loader):
+                print("\nbefor cat:", images[0].shape, images[1].shape)
+                print(images)
+                images = torch.cat(images, dim=0)
+                print("after cat:", images.shape)
+                images = images.to(self.args.device)
+
+                features = self.model(images)
+                print("features", features.shape)
+                print (features)
+
+                logits, labels = self.info_nce_loss(features)
+                loss = self.criterion(logits, labels)
+                train_loss += loss.item()
+
+                self.optimizer.zero_grad()
+                if apex_support and self.args.fp16_precision:
+                    with amp.scale_loss(loss, self.optimizer) as scaled_loss:
+                        scaled_loss.backward()
+                else:
+                    loss.backward()
+
+                self.optimizer.step()
+
+                if n_iter % self.args.log_every_n_steps == 0:
+                    top1, top5 = accuracy(logits, labels, topk=(1, 5))
+                    self.writer.add_scalar('loss', loss, global_step=n_iter)
+                    self.writer.add_scalar('acc/top1', top1[0], global_step=n_iter)
+                    self.writer.add_scalar('acc/top5', top5[0], global_step=n_iter)
+                    self.writer.add_scalar('learning_rate', self.scheduler.get_lr()[0], global_step=n_iter)
+
+                n_iter += 1
+
+            epoch_reslts['contrastive_loss'] = train_loss / len(finetune_loader)
+            epoch_reslts['learning_rate'] = self.scheduler.get_lr()[0]
+            complete_reslts[epoch_counter] = epoch_reslts
+            print(epoch_reslts)
+
+            # warmup for the first 10 epochs
+            if epoch_counter >= 10:
+                self.scheduler.step()
+            # logging.debug(f"Epoch: {epoch_counter}\tLoss: {loss}\tTop1 accuracy: {top1[0]}")
+
+        self.save_json(complete_reslts, 'finetuning_logs')
+        print("Finetuning has finished")
+        logging.info("Finetuning has finished.")
+        # save model checkpoints
+        checkpoint_name = 'checkpoint_{:04d}.pth.tar'.format(self.args.epochs)
+        save_checkpoint({
+            'epoch': self.args.epochs,
+            'arch': self.args.arch,
+            'state_dict': self.model.state_dict(),
+            'optimizer': self.optimizer.state_dict(),
+        }, is_best=False, filename=os.path.join(self.writer.log_dir, checkpoint_name))
+        logging.info(f"Model checkpoint and metadata has been saved at {self.writer.log_dir}.")
+        print(f"Model checkpoint and metadata has been saved at {self.writer.log_dir}.")

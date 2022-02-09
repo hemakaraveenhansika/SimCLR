@@ -160,16 +160,19 @@ class SimCLR(object):
 
             for images, _ in tqdm(finetune_loader):
                 print("\nbefor cat:", images[0].shape, images[1].shape)
-                print(images)
+                #print(images)
                 images = torch.cat(images, dim=0)
                 print("after cat:", images.shape)
                 images = images.to(self.args.device)
 
                 features = self.model(images)
                 print("features", features.shape)
-                print (features)
+                #print (features)
 
                 logits, labels = self.info_nce_loss(features)
+                print(logits)
+                print(labels)
+
                 loss = self.criterion(logits, labels)
                 train_loss += loss.item()
 

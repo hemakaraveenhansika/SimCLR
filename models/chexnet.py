@@ -15,15 +15,10 @@ class DenseNet121(nn.Module):
         self.densenet121 = torchvision.models.densenet121(pretrained=pretrained)
 
         num_ftrs = self.densenet121.classifier.in_features
-        if(mode=="pretrain"):
-            self.densenet121.classifier = nn.Sequential(
-                nn.Linear(num_ftrs, num_classes),
-            )
-        else:
-            self.densenet121.classifier = nn.Sequential(
-                nn.Linear(num_ftrs, num_classes),
-                nn.Sigmoid()
-            )
+        self.densenet121.classifier = nn.Sequential(
+            nn.Linear(num_ftrs, num_classes),
+        )
+
 
 
     def forward(self, x):

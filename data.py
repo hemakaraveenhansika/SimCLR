@@ -48,7 +48,7 @@ class ContrastiveDataset(Dataset):
         print("Sample size per class",sample_size)
         print("Classes with more than sample size",len(temp.keys()))
         self.classes=temp
-        b = [[x,y] for x,y in temp.items()]
+        b = [[x,len(y)] for x,y in temp.items()]
         table = wandb.Table(data=b, columns = ["Classes", "Image count"])
         if("train" in split):
             wandb.log({"train-data-distribution" : wandb.plot.bar(table, "Classes","Image count", title="Train Data distribution")})

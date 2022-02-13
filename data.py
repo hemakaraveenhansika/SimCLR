@@ -53,7 +53,7 @@ class ContrastiveDataset(Dataset):
         if("train" in split):
             wandb.log({"train-data-distribution" : wandb.plot.bar(table, "Classes","Image count", title="Train Data distribution")})
         elif("val" in split):
-            wandb.log({"test-data-distribution" : wandb.plot.bar(table, "Classes","Image count", title="Test Data distribution")})
+            wandb.log({"test-data-distribution" : wandb.plot.bar(table, "Classes","Image count", title="Validation Data distribution")})
         self.image_names = image_names
         self.labels = labels
         self.transform = transform

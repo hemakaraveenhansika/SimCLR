@@ -41,7 +41,6 @@ class ContrastiveDataset(Dataset):
                         self.classes[CLASS_NAMES[l]].append(image_name)
         print("\nDataset summery")
         temp = {}
-        print(self._get_lengths())
         for i,j in self.classes.items():
             print(i,len(j))
             if(sample_size is not None and len(j)> sample_size):
@@ -49,7 +48,12 @@ class ContrastiveDataset(Dataset):
         print("Sample size per class",sample_size)
         print("Classes with more than sample size",len(temp.keys()))
         self.classes=temp
-        wandb.log({"Data distribution":self._get_lengths()})
+        b = [[x,y] for x,y in temp.items()]
+        table = wandb.Table(data=b, columns = ["Classes", "Image count"])
+        if("train" in split):
+            wandb.log({"train-data-distribution" : wandb.plot.bar(table, "Classes","Image count", title="Train Data distribution")})
+        elif("val" in split):
+            wandb.log({"test-data-distribution" : wandb.plot.bar(table, "Classes","Image count", title="Test Data distribution")})
         self.image_names = image_names
         self.labels = labels
         self.transform = transform

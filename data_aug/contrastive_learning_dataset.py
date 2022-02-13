@@ -28,7 +28,7 @@ class ContrastiveLearningDataset:
                                               transforms.ToTensor()])
         return data_transforms
 
-    def get_dataset(self, name, n_views,split="train"):
+    def get_dataset(self, name, n_views,sample_size,split="train"):
         valid_datasets = {'cifar10': lambda: datasets.CIFAR10(self.root_folder, train=True,
                                                               transform=ContrastiveLearningViewGenerator(
                                                                   self.get_simclr_pipeline_transform(32),
@@ -42,6 +42,7 @@ class ContrastiveLearningDataset:
                                                           download=True),
                         'contrastive':lambda: ContrastiveDataset(self.root_folder,
                                                                 split=split,
+                                                                sample_size=sample_size,
                                                                 transform=self.get_medicap_contrastive_transform(256))
                         }
 

@@ -5,11 +5,12 @@ import os
 import copy
 from typing import Iterator, Optional, Sequence, List, TypeVar, Generic, Sized
 from numpy.random import choice
+import wandb
 
 CLASS_NAMES = [ 'Atelectasis', 'Cardiomegaly', 'Effusion', 'Infiltration', 'Mass', 'Nodule', 'Pneumonia',
-                'Pneumothorax', 'Consolidation', 'Edema', 'Emphysema', 'Fibrosis', 'Pleural_Thickening', 'Hernia']
+                'Pneumothorax', 'Consolidation', 'Edema', 'Emphysema', 'Fibrosis', 'Pleural_Thickening', 'Hernia',"No findings"]
 class ContrastiveDataset(Dataset):
-    def __init__(self, data_dir, split, transform=None):
+    def __init__(self, data_dir, split,sample_size, transform=None):
         """
         Args:
             data_dir: path to image directory.
@@ -19,6 +20,8 @@ class ContrastiveDataset(Dataset):
         """
         image_names = []
         labels = []
+
+        self.sample_size = sample_size
         self.classes = {"No findings":[]}
         for i in CLASS_NAMES:
             self.classes[i] = []
@@ -36,9 +39,17 @@ class ContrastiveDataset(Dataset):
                 for l in range(len(label)):
                     if(label[l] == 1):
                         self.classes[CLASS_NAMES[l]].append(image_name)
-        print("Dataset summery")
+        print("\nDataset summery")
+        temp = {}
+        print(self._get_lengths())
         for i,j in self.classes.items():
             print(i,len(j))
+            if(sample_size is not None and len(j)> sample_size):
+                temp[i] = choice(j,sample_size , replace=False)
+        print("Sample size per class",sample_size)
+        print("Classes with more than sample size",len(temp.keys()))
+        self.classes=temp
+        wandb.log({"Data distribution":self._get_lengths()})
         self.image_names = image_names
         self.labels = labels
         self.transform = transform
@@ -63,6 +74,8 @@ class ContrastiveDataset(Dataset):
         return len(self.image_names)
     def _get_class(self,cls):
         return self.classes[cls]
+    def _get_class_keys(self):
+        return self.classes.keys()
     def _get_lengths(self):
         return {y:len(x) for y,x in self.classes.items()}
 
@@ -81,14 +94,11 @@ class ContrastiveRandomSampler(Sampler[int]):
     replacement: bool
 
     def __init__(self, data_source: Sized, replacement: bool = False,
-                 num_samples: Optional[int] = None, generator=None,seed=None,clas="",index= 0) -> None:
+                 num_samples: Optional[int] = None, generator=None) -> None:
         self.data_source = data_source
         self.replacement = replacement
         self._num_samples = num_samples
         self.generator = generator
-        self.seed = seed
-        self.cls=clas
-        self.index = index
 
         if not isinstance(self.replacement, bool):
             raise TypeError("replacement should be a boolean value, but got "
@@ -114,22 +124,17 @@ class ContrastiveRandomSampler(Sampler[int]):
         if self.generator is None:
             seed = int(torch.empty((), dtype=torch.int64).random_().item())
             generator = torch.Generator()
-            if(self.seed is not None):
-                generator.manual_seed(self.seed+self.index)
-            else:
-                generator.manual_seed(seed)
+            generator.manual_seed(seed)
         else:
             generator = self.generator
 
         if self.replacement:
             for _ in range(self.num_samples // 32):
                 perm = torch.randint(high=n, size=(32,), dtype=torch.int64, generator=generator).tolist()
-                # print(self.cls,perm)
                 yield from perm
             yield from torch.randint(high=n, size=(self.num_samples % 32,), dtype=torch.int64, generator=generator).tolist()
         else:
             perm = torch.randperm(n, generator=generator).tolist()
-            # print(self.cls,perm)
             yield from perm
 
     def __len__(self) -> int:
@@ -168,24 +173,25 @@ class ContrastiveBatchSampler(Sampler[List[int]]):
         self.drop_last = drop_last
         self.dataset = dataset
         self.max_image_count = max_image_count
-        self.samplers = [ContrastiveRandomSampler(self.dataset._get_class("No findings"),seed=seed,clas="No findings")]
-        for c in range(len(CLASS_NAMES)):
-            self.samplers.append(ContrastiveRandomSampler(self.dataset._get_class(CLASS_NAMES[c]),replacement= True,num_samples = len(self.dataset._get_class("No findings")),seed=seed,clas=CLASS_NAMES[c],index=c+1))
+        self.samplers = []
+        for c in dataset._get_class_keys():
+            self.samplers.append(ContrastiveRandomSampler(self.dataset._get_class(c),replacement= False))
 
     def __iter__(self) -> Iterator[List[int]]:
         batch = []
         iters = []
         for samp in self.samplers:
             iters.append(iter(samp))
-        draw = choice(range(len(iters)), self.batch_size, replace=False, p=([0.99]+[0.01/(len(self.samplers)-1)]*(len(self.samplers)-1)))
-        for _ in range(min(len(self.samplers[0])//2,self.max_image_count//2)):
+        assert len(iters)>=self.batch_size, "Batch size should be smaller"
+        draw = choice(range(len(iters)), self.batch_size, replace=False)
+        for _ in range(len(self.samplers[0])//2):
             for j in draw:
                 batch.append(next(iters[j]))
             for k in draw:
                 batch.append(next(iters[k]))
             yield batch
             batch = []
-            draw = choice(range(len(iters)), self.batch_size, replace=False, p=([0.99]+[0.01/(len(self.samplers)-1)]*(len(self.samplers)-1)))
+            draw = choice(range(len(iters)), self.batch_size, replace=False)
  
 
     def __len__(self) -> int:
@@ -194,7 +200,7 @@ class ContrastiveBatchSampler(Sampler[List[int]]):
         # implementation below.
         # Somewhat related: see NOTE [ Lack of Default `__len__` in Python Abstract Base Classes ]
 
-        t_len = min(len(self.samplers[0])//2,self.max_image_count//2)
+        t_len = len(self.samplers[0])//2
         # for s in self.samplers:
         #     t_len += len(s)
         return t_len

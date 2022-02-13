@@ -57,7 +57,9 @@ parser.add_argument('--gpu-index', default=0, type=int, help='Gpu index.')
 parser.add_argument('--train-image-list', default="./data/train_list.txt", type=str, help='Image name list path')
 parser.add_argument('--val-image-list', default="./data/val_list.txt", type=str, help='Validation Image name list path')
 parser.add_argument('--train-image-limit', default=42405, type=int, help='Train images limit')
+parser.add_argument('--train-sample-size', default=None, type=int, help='Train images per class')
 parser.add_argument('--val-image-limit', default=6079, type=int, help='Val images limit')
+parser.add_argument('--val-sample-size', default=None, type=int, help='Val images per class')
 parser.add_argument('--resume', metavar='resume', default='/content/SimCLR/currrent_checkpoint.pth.tar', help='path to resume model')
 parser.add_argument('--result_dir', metavar='RESULT_DIR', default='./', help='path to result dir')
 parser.add_argument('--arch-weights',default='./chexnet.pth.tar',type=str, help='path to arch weights')
@@ -79,8 +81,8 @@ def main():
         args.gpu_index = -1
 
     dataset = ContrastiveLearningDataset(args)
-    train_dataset = dataset.get_dataset(args.dataset_name, args.n_views,args.train_image_list)
-    val_dataset = dataset.get_dataset(args.dataset_name, args.n_views,args.val_image_list)
+    train_dataset = dataset.get_dataset(args.dataset_name, args.n_views,sample_size=args.train_sample_size,split=args.train_image_list)
+    val_dataset = dataset.get_dataset(args.dataset_name, args.n_views,sample_size=args.val_sample_size,split=args.val_image_list)
     train_sampler = ContrastiveBatchSampler(args.batch_size,args.train_image_limit,dataset=train_dataset,drop_last=False,seed=args.seed)
     val_sampler = ContrastiveBatchSampler(args.batch_size,args.val_image_limit,dataset=val_dataset,drop_last=False,seed=args.seed)
 

@@ -77,7 +77,7 @@ class SimCLR(object):
             self.best_valid_loss = checkpoint['best_valid_loss']
             self.model.load_state_dict(checkpoint['state_dict'])
             self.optimizer.load_state_dict(checkpoint['optimizer'])
-            print("Checkpoint loaded. Resume training from epoch {}".format(self.start_epoch))
+            print("Checkpoint loaded. Resume training from epoch {}".format(checkpoint['epoch']))
         except Exception as err:
             print("[Load Checkpoint Failed {}!]\n".format(err))
 

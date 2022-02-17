@@ -224,5 +224,7 @@ class SimCLR(object):
                 loss = self.criterion(logits, labels)
                 valid_loss += loss.item()
             valid_loss = valid_loss/len(valid_loader)
-            print(confution_matrix)
+            b = [[x,y[0]/y[1]] for x,y in confution_matrix.items()]
+            table = wandb.Table(data=b, columns = ["Classes", "Correct rate"])
+            wandb.log({"validation-correct-rate" : wandb.plot.bar(table, "Classes","Correct rate", title="Validation Correct rate")})
         return valid_loss

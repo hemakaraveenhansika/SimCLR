@@ -208,6 +208,8 @@ class SimCLR(object):
                 logits, labels = self.info_nce_loss(features)
                 c = torch.argmax(logits,dim=1).tolist()
                 temp = target.tolist()
+                print(target)
+                print(temp)
                 for i in range(len(c)):
                     it = c[i]
                     for j in len(temp[i]):

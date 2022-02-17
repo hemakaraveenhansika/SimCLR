@@ -13,7 +13,8 @@ import json
 import wandb
 
 torch.manual_seed(0)
-
+CLASS_NAMES = [ 'Atelectasis', 'Cardiomegaly', 'Effusion', 'Infiltration', 'Mass', 'Nodule', 'Pneumonia',
+                'Pneumothorax', 'Consolidation', 'Edema', 'Emphysema', 'Fibrosis', 'Pleural_Thickening', 'Hernia']
 
 class SimCLR(object):
 
@@ -191,8 +192,10 @@ class SimCLR(object):
         print("validation")
         model.eval()
         valid_loss = 0
+        confution_matrix = {x:[0,0] for x in CLASS_NAMES}
+        confution_matrix["No findings"] = [0,0]
         with torch.no_grad():
-            for images, _ in tqdm(valid_loader):
+            for images, target in tqdm(valid_loader):
                 # print("\nbefor cat:", len(images), images[0].shape, images[1].shape)
                 # images = torch.cat(images, dim=0)
                 # print("after cat:", images.shape)
@@ -203,7 +206,21 @@ class SimCLR(object):
                 # print("features", features.shape)
 
                 logits, labels = self.info_nce_loss(features)
+                c = torch.argmax(logits,dim=1).tolist()
+                temp = target.tolist()
+                for i in range(len(c)):
+                    it = c[i]
+                    for j in len(temp[i]):
+                        if(temp[i][j] == 1):
+                            if(it==0):
+                                confution_matrix[CLASS_NAMES[j]][0] +=1
+                            confution_matrix[CLASS_NAMES[j]][1] +=1
+                    if(sum(temp[i])==0):
+                        if(it==0):
+                            confution_matrix["No findings"][0] +=1
+                        confution_matrix["No findings"][1] +=1
                 loss = self.criterion(logits, labels)
                 valid_loss += loss.item()
             valid_loss = valid_loss/len(valid_loader)
+            print(confution_matrix)
         return valid_loss

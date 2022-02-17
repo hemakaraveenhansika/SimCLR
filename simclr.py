@@ -161,7 +161,7 @@ class SimCLR(object):
 
             print("save checkpoint in", os.path.join(self.args.result_dir, checkpoint_name))
 
-            epoch_reslts['contrastive_train_loss'] = train_loss / len(train_loader)
+            epoch_reslts['contrastive_train_loss'] = train_loss / (len(train_loader)+0.0000000001)
             epoch_reslts['contrastive_valid_loss'] = valid_loss
             epoch_reslts['learning_rate'] = self.scheduler.get_last_lr()[0]
             complete_reslts[epoch_counter] = epoch_reslts

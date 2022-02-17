@@ -166,7 +166,9 @@ class SimCLR(object):
             epoch_reslts['learning_rate'] = self.scheduler.get_last_lr()[0]
             complete_reslts[epoch_counter] = epoch_reslts
             print(epoch_reslts)
-            wandb.log(epoch_reslts)
+            # wandb.log(epoch_reslts)
+
+
             # warmup for the first 10 epochs
             if epoch_counter >= 10:
                 self.scheduler.step()

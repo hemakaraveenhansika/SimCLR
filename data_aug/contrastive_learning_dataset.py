@@ -25,6 +25,7 @@ class ContrastiveLearningDataset:
     @staticmethod
     def get_medicap_contrastive_transform(size):
         data_transforms = transforms.Compose([transforms.Resize(size),
+                                              transforms.RandomCrop(size*0.8),
                                               transforms.ToTensor()])
         return data_transforms
 
@@ -43,7 +44,7 @@ class ContrastiveLearningDataset:
                         'contrastive':lambda: ContrastiveDataset(self.root_folder,
                                                                 split=split,
                                                                 sample_size=sample_size,
-                                                                transform=self.get_medicap_contrastive_transform(256))
+                                                                transform=self.get_medicap_contrastive_transform(300))
                         }
 
         try:

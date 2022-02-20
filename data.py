@@ -1,4 +1,5 @@
 import torch
+from torchvision.utils import save_image
 from torch.utils.data import Dataset , Sampler, RandomSampler
 from PIL import Image
 import os
@@ -71,7 +72,7 @@ class ContrastiveDataset(Dataset):
         label = self.labels[index]
         if self.transform is not None:
             image = self.transform(image)
-        image.save("/contents/"+image_name.split("/")[-1])
+        save_image(image, "/contents/"+image_name.split("/")[-1])
         return image, torch.FloatTensor(label)
 
     def __len__(self):
